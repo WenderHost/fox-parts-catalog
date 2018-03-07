@@ -21,5 +21,14 @@ require ( 'lib/typerocket/init.php' );
 require ( 'lib/post-types/crystal.php' );
 require ( 'lib/post-types/crystal.custom-fields.php' );
 require ( 'lib/post-types/crystal.filters.php' );
+require ( 'lib/fns/rest-api.php' );
 require ( 'lib/fns/save_post.php' );
 require ( 'lib/wpcli/foxparts.php' );
+
+/*
+add_filter( 'allowed_http_origins', 'add_allowed_origins' );
+function add_allowed_origins( $origins ) {
+    $origins[] = 'http://localhost:3000';
+    return $origins;
+}
+*/
