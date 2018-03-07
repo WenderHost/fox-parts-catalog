@@ -87,7 +87,15 @@ class Fox_Parts_CLI extends WP_CLI_Command{
         }
     }
 
-    function create_part( $part_type, $part_array ){
+    /**
+     * Creates a part.
+     *
+     * @param      string   $part_type   The part type
+     * @param      array    $part_array  The part array
+     *
+     * @return     int  Post ID of the new part.
+     */
+    private function create_part( $part_type, $part_array ){
       $post_id = wp_insert_post([
         'post_title' => $part_array['name'],
         'post_type' => $part_type,
@@ -108,7 +116,15 @@ class Fox_Parts_CLI extends WP_CLI_Command{
       return $post_id;
     }
 
-    function get_part_name( $part_type, $part_array ){
+    /**
+     * Gets the part name.
+     *
+     * @param      string $part_type   The part type
+     * @param      array  $part_array  The part array
+     *
+     * @return     boolean|string  The part name.
+     */
+    private function get_part_name( $part_type, $part_array ){
       $name = false;
       switch( $part_type ){
         case 'crystal':
@@ -118,5 +134,5 @@ class Fox_Parts_CLI extends WP_CLI_Command{
       return $name;
     }
 }
-//WP_CLI::add_command( 'foxparts', 'Fox_Parts_CLI' );
+
 WP_CLI::add_command( 'foxparts', 'Fox_Parts_CLI' );
