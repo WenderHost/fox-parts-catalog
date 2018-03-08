@@ -138,7 +138,7 @@ function get_options( $data ){
   error_log( $response->message );
 
   foreach ($configuredPart as $key => $value) {
-    if( '_' == $value ){
+    //if( '_' == $value ){
       $var = $key . '_options';
       $$var = [];
       if( $query->have_posts() ){
@@ -150,7 +150,7 @@ function get_options( $data ){
         }
       }
       $response->partOptions[$key] = ( $mapped_values = map_values_to_labels( $key, $$var ) )? $mapped_values : $$var ;
-    }
+    //}
   }
 
   wp_send_json( $response, 200 );
