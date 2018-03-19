@@ -12,7 +12,7 @@ function init_rest_api(){
 add_action( 'rest_api_init', __NAMESPACE__ . '\\init_rest_api' );
 
 /**
- * Retrieve available options given a crystal's configuration.
+ * Retrieve available options given a part's configuration.
  *
  * @param      string $part The Fox part number
  */
@@ -27,19 +27,31 @@ function get_options( $data ){
 
   $start = ( 'F' == substr( $options, 0, 1) )? 1 : 0;
   $options_array = str_split( substr( $options, $start ) );
+  $part_type = $options_array[0];
 
   $configuredPart = [];
   $configuredPart['frequency'] = $frequency;
 
-  $keys = [ 0 => 'product_type', 1 => 'size', 2 => 'package_option', 3 => 'package_option', 4 => 'tolerance', 5 => 'stability', 6 => 'load', 7 => 'optemp' ];
+  $keys = [
+    'C' => [ 0 => 'part_type', 1 => 'size', 2 => 'package_option', 3 => 'package_option', 4 => 'tolerance', 5 => 'stability', 6 => 'load', 7 => 'optemp' ],
+    'O' => [ 0 => 'part_type', 1 => 'size', 2 => 'package_option', 3 => 'package_option', 4 => 'voltage', 5 => 'stability', 6 => 'optemp' ],
+  ];
+  if( ! array_key_exists( $part_type, $keys ) ){
+    $response = new \WP_Error('nometakeys', __( 'No meta keys have been mapped for `' . $part_type . '`.', 'fox-parts-catalog' ) );
+    wp_send_json( $response, 400 );
+  }
+
+  $meta_keys = $keys[$part_type];
+
+  //$keys = [ 0 => 'part_type', 1 => 'size', 2 => 'package_option', 3 => 'package_option', 4 => 'tolerance', 5 => 'stability', 6 => 'load', 7 => 'optemp' ];
   for ($i=0; $i < count($options_array); $i++) {
-    $key = ( array_key_exists( $i, $keys ) )? $keys[$i] : false;
+    $key = ( array_key_exists( $i, $meta_keys ) )? $meta_keys[$i] : false;
 
     switch ($i) {
       case 3:
         continue;
       case 2:
-        $configuredPart[$keys[$i]] = $options_array[$i].$options_array[$i + 1];
+        $configuredPart[$meta_keys[$i]] = $options_array[$i].$options_array[$i + 1];
         break;
       default:
         if( ! $key )
@@ -50,12 +62,18 @@ function get_options( $data ){
   }
   $response->configuredPart = $configuredPart;
   error_log( str_repeat( '-', 80 ) );
-  error_log( '$part = ' . $part );
+
+  $tax_query = [
+    [
+      'taxonomy' => 'part_type',
+      'field' => 'slug',
+      'terms' => get_part_type_slug( $options_array[0] ),
+    ]
+  ];
 
   $meta_query = [];
-  if( '' != $configuredPart['frequency'] && '_' != $configuredPart['frequency'] && '0.0' != $configuredPart['frequency'] ){
+  if( isset( $configuredPart['frequency'] ) && '' != $configuredPart['frequency'] && '_' != $configuredPart['frequency'] && '0.0' != $configuredPart['frequency'] ){
     $frequency = floatval( $configuredPart['frequency'] );
-    //error_log( 'frequency var type = ' . gettype( $configuredPart['frequency'] ) . '; $frequency = ' . $frequency . '; floating var type = ' . gettype( $frequency ) );
     $meta_query[] = [
       'relation' => 'AND',
       [
@@ -73,7 +91,7 @@ function get_options( $data ){
     ];
   }
 
-  if( '' != $configuredPart['size'] && '_' != $configuredPart['size'] ){
+  if( isset( $configuredPart['size'] ) && '' != $configuredPart['size'] && '_' != $configuredPart['size'] ){
     $meta_query[] = [
       'key' => 'size',
       'value' => $configuredPart['size'],
@@ -81,7 +99,7 @@ function get_options( $data ){
     ];
   }
 
-  if( '' != $configuredPart['package_option'] && '_' != $configuredPart['package_option'] ){
+  if( isset( $configuredPart['package_option'] ) && '' != $configuredPart['package_option'] && '_' != $configuredPart['package_option'] ){
     $meta_query[] = [
       'key' => 'package_option',
       'value' => $configuredPart['package_option'],
@@ -89,7 +107,7 @@ function get_options( $data ){
     ];
   }
 
-  if( '' != $configuredPart['tolerance'] && '_' != $configuredPart['tolerance'] ){
+  if( isset( $configuredPart['tolerance'] ) && '' != $configuredPart['tolerance'] && '_' != $configuredPart['tolerance'] ){
     $meta_query[] = [
       'key' => 'tolerance',
       'value' => $configuredPart['tolerance'],
@@ -97,10 +115,18 @@ function get_options( $data ){
     ];
   }
 
-  if( '' != $configuredPart['stability'] && '_' != $configuredPart['stability'] ){
+  if( isset( $configuredPart['stability'] ) && '' != $configuredPart['stability'] && '_' != $configuredPart['stability'] ){
     $meta_query[] = [
       'key' => 'stability',
       'value' => $configuredPart['stability'],
+      'compare' => '='
+    ];
+  }
+
+  if( isset( $configuredPart['voltage'] ) && '' != $configuredPart['voltage'] && '_' != $configuredPart['voltage'] ){
+    $meta_query[] = [
+      'key' => 'voltage',
+      'value' => $configuredPart['voltage'],
       'compare' => '='
     ];
   }
@@ -110,7 +136,7 @@ function get_options( $data ){
    * so we shouldn't filter by `load` since that will nullify all
    * results.
 
-  if( '' != $configuredPart['load'] && '_' != $configuredPart['load'] ){
+  if( isset( $configuredPart['load'] ) && '' != $configuredPart['load'] && '_' != $configuredPart['load'] ){
     $meta_query[] = [
       'key' => 'load',
       'value' => $configuredPart['load'],
@@ -119,7 +145,7 @@ function get_options( $data ){
   }
   */
 
-  if( '' != $configuredPart['optemp'] && '_' != $configuredPart['optemp'] ){
+  if( isset( $configuredPart['optemp'] ) && '' != $configuredPart['optemp'] && '_' != $configuredPart['optemp'] ){
     $meta_query[] = [
       'key' => 'optemp',
       'value' => $configuredPart['optemp'],
@@ -127,9 +153,12 @@ function get_options( $data ){
     ];
   }
 
+  error_log( '$meta_query = ' . print_r( $meta_query, true ) . '; $tax_query = ' . print_r( $tax_query, true ) );
+
   $query = new \WP_Query([
-    'post_type' => 'crystal',
+    'post_type' => 'foxpart',
     'posts_per_page' => -1,
+    'tax_query' => $tax_query,
     'meta_query' => $meta_query,
   ]);
 
@@ -138,24 +167,47 @@ function get_options( $data ){
   error_log( $response->message );
 
   foreach ($configuredPart as $key => $value) {
-    //if( '_' == $value ){
       $var = $key . '_options';
       $$var = [];
       if( $query->have_posts() ){
         foreach ($query->posts as $post ) {
-          //error_log('Retrieving `' . $key . '` for ' . $post->post_title);
           $option = get_post_meta( $post->ID, $key, true );
           if( ! in_array( $option, $$var ) )
             $$var[] = $option;
         }
       }
       $response->partOptions[$key] = ( $mapped_values = map_values_to_labels( $key, $$var ) )? $mapped_values : $$var ;
-    //}
   }
 
   wp_send_json( $response, 200 );
 }
 
+/**
+ * Provided a part type code, returns the part type slug.
+ *
+ * @param      string  $part_type  The part type code
+ *
+ * @return     string   The part type slug.
+ */
+function get_part_type_slug( $part_type_code ){
+  $part_types = FOXPC_PART_TYPES;
+
+  if( ! array_key_exists( $part_type_code, $part_types ) ){
+    $response = new \WP_Error('invalidparttype', __('No part type slug found for ' . $part_type_code,'fox-parts-catalog') );
+    wp_send_json( $response, 400 );
+  }
+
+  return $part_types[$part_type];
+}
+
+/**
+ * Provided a setting, returns values mapped to labels.
+ *
+ * @param      string         $setting  The setting
+ * @param      array          $values   The values
+ *
+ * @return     array|boolean  Returns the values mapped to labels.
+ */
 function map_values_to_labels( $setting, $values = [] ){
 
   if( 0 == count( $values ) || ! is_array( $values ) )
