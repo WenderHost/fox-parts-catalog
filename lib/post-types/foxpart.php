@@ -81,7 +81,10 @@ add_action( 'typerocket_loaded', function(){
           '3.2x1.5 mm ESR 50K Ohm (Optional)' => '13L',
           '4.1x1.5 mm' => '145',
           '4.9x1.8 mm' => '255',
+          '5.0x1.5 mm' => 'T15',
+          '6.0x2.0 mm' => 'T26',
           '7.0x1.5 mm' => 'FSX',
+          '8.0x3.0 mm' => 'T38',
           '8.7x3.7 mm' => 'FSR',
           '10.4x4.0 mm' => 'FSM',
         ];
