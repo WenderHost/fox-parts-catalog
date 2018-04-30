@@ -35,9 +35,9 @@ class Fox_Parts_CLI extends WP_CLI_Command{
         if( empty( $part_type ) )
             WP_CLI::error( 'No --part_type provided.' );
 
-        $allowed_part_types = ['crystal','oscillator'];
-        if( ! in_array( $part_type, $allowed_part_types ) )
-            WP_CLI::error('Invalid `part_type`. Please specify one of the following part types: ' . "\n - " . implode( "\n" . ' - ', $allowed_part_types ) );
+        //$allowed_part_types = ['crystal','oscillator'];
+        if( ! in_array( $part_type, FOXPC_PART_TYPES ) )
+            WP_CLI::error('Invalid `part_type`. Please specify one of the following part types: ' . "\n - " . implode( "\n" . ' - ', FOXPC_PART_TYPES ) );
 
         if( empty( $file ) )
             WP_CLI::error( 'No --file provided.' );
@@ -124,8 +124,13 @@ class Fox_Parts_CLI extends WP_CLI_Command{
         case 'crystal':
           $attributes = ['from_frequency','to_frequency','size','package_option','tolerance','stability','optemp'];
           break;
+
+        case 'crystal-khz':
+          $attributes = ['from_frequency','to_frequency','size','tolerance','stability','optemp'];
+          break;
+
         case 'oscillator':
-          $attributes = ['from_frequency','to_frequency','size','package_option','voltage','stability','optemp'];
+          $attributes = ['from_frequency','to_frequency','size','output','voltage','stability','optemp'];
           break;
       }
 
@@ -152,13 +157,39 @@ class Fox_Parts_CLI extends WP_CLI_Command{
      * @return     boolean|string  The part name.
      */
     private function get_part_name( $part_type, $part_array ){
+
       $name = false;
+
       switch( $part_type ){
         case 'crystal':
-          $name = 'F' . $part_array['part_type'] . $part_array['size'] . $part_array['package_option'] . $part_array['tolerance'] . $part_array['stability'] . '_' . $part_array['optemp'];
+          $name_components = ['F','part_type','size','package_option','tolerance','stability','_','optemp'];
+          //$name = 'F' . $part_array['part_type'] . $part_array['size'] . $part_array['package_option'] . $part_array['tolerance'] . $part_array['stability'] . '_' . $part_array['optemp'];
           break;
+
+        case 'crystal-khz':
+          $name_components = ['F','part_type','size','tolerance','stability','optemp'];
+          break;
+
         case 'oscillator':
-          $name = 'F' . $part_array['part_type'] . $part_array['size'] . $part_array['package_option'] . $part_array['voltage'] . $part_array['stability'] . '_' . $part_array['optemp'];
+          $name_components = ['F','part_type','size','output','voltage','stability','optemp'];
+          //$name = 'F' . $part_array['part_type'] . $part_array['size'] . $part_array['output'] . $part_array['voltage'] . $part_array['stability'] . $part_array['optemp'];
+          break;
+
+        default:
+          $name_components = [];
+          break;
+      }
+
+      if( ! count( $name_components ) )
+        return false;
+
+      foreach ( $name_components as $name_component ) {
+        if( 1 === strlen( $name_component ) ){
+          $name.= $name_component;
+        } else {
+          if( isset( $part_array[$name_component] ) )
+            $name.= $part_array[$name_component];
+        }
       }
       return $name;
     }

@@ -71,6 +71,32 @@ add_action( 'typerocket_loaded', function(){
         );
         break;
 
+      case 'crystal-khz':
+        $size_options = [
+          '1.6x1.0 mm' => '161',
+          '2.0x1.2 mm' => '122',
+          '2.0x1.2 mm (AEC-Q200)' => '12A',
+          '3.2x1.5 mm (AEC-Q200)' => '13A',
+          '3.2x1.5 mm ESR 70K Ohm (Std)' => '135',
+          '3.2x1.5 mm ESR 50K Ohm (Optional)' => '13L',
+          '4.1x1.5 mm' => '145',
+          '4.9x1.8 mm' => '255',
+          '7.0x1.5 mm' => 'FSX',
+          '8.7x3.7 mm' => 'FSR',
+          '10.4x4.0 mm' => 'FSM',
+        ];
+        echo $form->row(
+          $form->select('Size')->setOptions($size_options),
+          $form->text('FROM Frequency',['style' => 'max-width: 120px;']),
+          $form->text('TO Frequency',['style' => 'max-width: 120px;'])
+        );
+        echo $form->row(
+          $form->text('Tolerance',['style' => 'max-width: 120px;']),
+          $form->text('Stability',['style' => 'max-width: 120px;']),
+          $form->text('OpTemp',['style' => 'max-width: 120px;'])
+        );
+        break;
+
       case 'oscillator':
         echo $form->row(
           $form->text('FROM Frequency',['style' => 'max-width: 120px;']),
@@ -93,12 +119,11 @@ add_action( 'typerocket_loaded', function(){
         ];
         echo $form->row(
           $form->select('Size')->setOptions($size_options),
-          $form->text('Package Option',['style' => 'max-width: 120px;'])
+          $form->text('Output',['style' => 'max-width: 120px;'])
         );
         echo $form->row(
           $form->text('Voltage',['style' => 'max-width: 120px;']),
           $form->text('Stability',['style' => 'max-width: 120px;']),
-          $form->text('Load',['style' => 'max-width: 120px;']),
           $form->text('OpTemp',['style' => 'max-width: 120px;'])
         );
         break;
