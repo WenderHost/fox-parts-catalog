@@ -19,6 +19,11 @@ class Fox_Parts_CLI extends WP_CLI_Command{
      * [--part_type=<part_type>]
      * : The type of parts we're importing (e.g. crystal). Must match name of existing WordPress post_type.
      *
+     *   Available part types:
+     *   - crystal
+     *   - crystal-khz
+     *   - oscillator
+     *
      * [--delete]
      * : Delete existing parts of the type we're importing
      *
