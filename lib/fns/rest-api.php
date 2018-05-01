@@ -39,6 +39,7 @@ function get_options( $data ){
   $configuredPart = [];
   $configuredPart['frequency'] = $frequency;
   $configuredPart['package_type'] = $package_type;
+  $configuredPart['number'] = $options;
 
   /**
    * FOX PART NUMBER MAPPINGS
@@ -146,6 +147,16 @@ function get_options( $data ){
       }
       break;
 
+    case 'K':
+      $pin_thru_khzcrystal_part_types = ['T15','T26','T38'];
+      $compare = ( 'pin-thru' == $configuredPart['package_type'] )? 'IN' : 'NOT IN';
+      $meta_query[] = [
+        'key' => 'size',
+        'value' => $pin_thru_khzcrystal_part_types,
+        'compare' => $compare,
+      ];
+      break;
+
     default:
       if( isset( $configuredPart['package_option'] ) && '' != $configuredPart['package_option'] && ! stristr( $configuredPart['package_option'], '_' ) ){
         $meta_query[] = [
@@ -213,7 +224,7 @@ function get_options( $data ){
     'meta_query' => $meta_query,
   ]);
 
-  $response->message = ( ! $query->have_posts() )? '0 part options found.' : $query->post_count . ' part options found.';
+  $response->message = ( ! $query->have_posts() )? '0 part options found (' . $data['part'] . ', ' . strlen( $configuredPart['number'] ) . ' chars in part no).' : $query->post_count . ' part options found.';
   $response->availableParts = $query->post_count;
   error_log( $response->message );
 
@@ -322,7 +333,10 @@ function map_values_to_labels( $atts ){
           '4ST' => 'HC49 2.6mm height',
           '9ST' => 'HC49 2.5mm height',
           '4UT' => 'HC49U 13.46 height',
-          '80T' => 'HC80U'
+          '80T' => 'HC80U',
+          'T15' => '5.0x1.5 mm',
+          'T26' => '6.0x2.0 mm',
+          'T38' => '8.0x3.0 mm',
         ];
       } else if( 'K' == $args['part_type'] ) {
         $labels = [
