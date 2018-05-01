@@ -168,7 +168,6 @@ class Fox_Parts_CLI extends WP_CLI_Command{
       switch( $part_type ){
         case 'crystal':
           $name_components = ['F','part_type','size','package_option','tolerance','stability','_','optemp'];
-          //$name = 'F' . $part_array['part_type'] . $part_array['size'] . $part_array['package_option'] . $part_array['tolerance'] . $part_array['stability'] . '_' . $part_array['optemp'];
           break;
 
         case 'crystal-khz':
@@ -177,7 +176,6 @@ class Fox_Parts_CLI extends WP_CLI_Command{
 
         case 'oscillator':
           $name_components = ['F','part_type','size','output','voltage','stability','optemp'];
-          //$name = 'F' . $part_array['part_type'] . $part_array['size'] . $part_array['output'] . $part_array['voltage'] . $part_array['stability'] . $part_array['optemp'];
           break;
 
         default:
