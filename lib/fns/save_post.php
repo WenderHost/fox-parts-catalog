@@ -37,6 +37,10 @@ function update_post_title( $post_id ){
       $check_keys = ['size','package_option','tolerance','stability','optemp'];
       break;
 
+    case 'crystal-khz':
+      $check_keys = ['size','tolerance','stability','optemp'];
+      break;
+
     case 'oscillator':
       $check_keys = ['size','package_option','voltage','stability','optemp'];
       break;
@@ -54,6 +58,10 @@ function update_post_title( $post_id ){
   switch ( $part_type ) {
     case 'crystal':
       $part_name = 'F' . array_search( $part_type, $part_types ) . $meta['size'][0] . $meta['package_option'][0] . $meta['tolerance'][0] . $meta['stability'][0] . '_' . $meta['optemp'][0];
+      break;
+
+    case 'crystal-khz':
+      $part_name = 'F' . array_search( $part_type, $part_types ) . $meta['size'][0] . $meta['tolerance'][0] . $meta['stability'][0] . $meta['optemp'][0];
       break;
 
     case 'oscillator':
