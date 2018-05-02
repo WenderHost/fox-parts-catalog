@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name:     Fox Electronics Parts Catalog
- * Plugin URI:      PLUGIN SITE HERE
+ * Plugin URI:      https://github.com/WenderHost/fox-parts-catalog
  * Description:     Adds CPTs necessary to store the Fox Electronics Parts Catalog inside the WordPress database.
  * Author:          Michael Wender
  * Author URI:      https://mwender.com
- * Text Domain:     proposal-manager
+ * Text Domain:     fox-electronics
  * Domain Path:     /languages
  * Version:         0.1.0
  *
