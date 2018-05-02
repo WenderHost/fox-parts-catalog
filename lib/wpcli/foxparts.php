@@ -114,6 +114,12 @@ class Fox_Parts_CLI extends WP_CLI_Command{
      * @return     int  Post ID of the new part.
      */
     private function create_part( $part_type, $part_array ){
+      $part_exists = get_page_by_title( $part_array['name'], OBJECT, 'foxpart' );
+      if( ! is_null( $part_exists ) ){
+        WP_CLI::line('SKIPPING: Part `' . $part_array['name'] . '` exists.');
+        return;
+      }
+
       $post_id = wp_insert_post([
         'post_title' => $part_array['name'],
         'post_type' => 'foxpart',
