@@ -304,6 +304,7 @@ function map_values_to_labels( $atts ){
         'HH' => 'HCMOS',
         'HL' => 'HCMOS',
         'HS' => 'HCMOS',
+        'HK' => 'HCMOS',
         'PD' => 'LVPECL',
         'PS' => 'LVPECL',
         'PU' => 'LVPECL',
