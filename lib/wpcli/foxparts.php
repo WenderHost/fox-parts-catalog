@@ -14,15 +14,26 @@ class Fox_Parts_CLI extends WP_CLI_Command{
      * ## OPTIONS
      *
      * <file>
-     * : Full path to the file we're importing
+     * : Full path to the CSV file we're importing
      *
-     * [--part_type=<part_type>]
-     * : The type of parts we're importing (e.g. crystal). Must match name of existing WordPress post_type.
+     * In your CSV, setup separate product type groupings by
+     * including multiple header rows. Use a new header row
+     * for each part type.
      *
-     *   Available part types:
-     *   - crystal
-     *   - crystal-khz
-     *   - oscillator
+     * Example:
+     *
+     * part_type,size,from_frequency,to_frequency,tolerance,stability,optemp
+     * K,122,0.032768,0.032768,E,I,M
+     * K,122,0.032768,0.032768,H,I,M
+     * K,12A,0.032768,0.032768,E,I,I
+     * K,135,0.032768,0.032768,E,I,M
+     * K,135,0.032768,0.032768,H,I,M
+     * part_type,size,package_option,from_frequency,to_frequency,tolerance,stability,optemp
+     * C,4,ST,3.2,80,B,B,D
+     * C,4,ST,3.2,80,C,B,D
+     * C,4,ST,3.2,80,D,B,D
+     * C,4,ST,3.2,80,E,B,D
+     * C,4,ST,3.2,80,F,B,D
      *
      * [--delete]
      * : Delete existing parts of the type we're importing
@@ -35,14 +46,6 @@ class Fox_Parts_CLI extends WP_CLI_Command{
      */
     function import( $args, $assoc_args ){
         $file = $args[0];
-        $part_type = $assoc_args['part_type'];
-
-        if( empty( $part_type ) )
-            WP_CLI::error( 'No --part_type provided.' );
-
-        //$allowed_part_types = ['crystal','oscillator'];
-        if( ! in_array( $part_type, FOXPC_PART_TYPES ) )
-            WP_CLI::error('Invalid `part_type`. Please specify one of the following part types: ' . "\n - " . implode( "\n" . ' - ', FOXPC_PART_TYPES ) );
 
         if( empty( $file ) )
             WP_CLI::error( 'No --file provided.' );
@@ -56,29 +59,11 @@ class Fox_Parts_CLI extends WP_CLI_Command{
         // Are we deleting existing parts?
         $delete = ( array_key_exists( 'delete', $assoc_args ) )? true : false;
 
-        // Delete all CPTs of the part_type
-        if( $delete ){
-          WP_CLI::line( 'Deleting all Fox Parts of of part_type `' . $part_type . '`.' );
-          $term = get_term_by( 'slug', $part_type, 'part_type', ARRAY_A );
-          if( $term ){
-            $term_id = intval( $term['term_id'] );
-            global $wpdb;
-            $wpdb->query(
-              $wpdb->prepare( 'DELETE a,b,c
-                FROM ' . $wpdb->prefix . 'posts a
-                LEFT JOIN ' . $wpdb->prefix . 'term_relationships b ON ( a.ID = b.object_id )
-                LEFT JOIN ' . $wpdb->prefix . 'postmeta c ON ( a.ID = c.post_id )
-                LEFT JOIN ' . $wpdb->prefix . 'term_taxonomy d ON ( d.term_taxonomy_id = b.term_taxonomy_id )
-                LEFT JOIN ' . $wpdb->prefix . 'terms e ON ( e.term_id = d.term_id )
-                WHERE e.term_id=%d', $term_id )
-              );
-          }
-        }
-
         $row = 1;
         $table_rows = [];
+        $current_part_type_slug = '';
         while( ( $data = fgetcsv( $handle, 1000, ',' ) ) !== FALSE  ){
-            if( 1 === $row && 'part_type' == $data[0] ){
+            if( 'part_type' == $data[0] ){
                 $columns = $data;
                 $num_columns = count( $columns );
                 $row++;
@@ -90,11 +75,18 @@ class Fox_Parts_CLI extends WP_CLI_Command{
                 $key = $columns[$i];
                 $table_row[$key] = $data[$i];
             }
+            $part_type_slug = $this->get_part_type_slug( $table_row['part_type'] );
 
-            $part_name = $this->get_part_name( $part_type, $table_row );
+            $part_name = $this->get_part_name( $part_type_slug, $table_row );
             $table_row['name'] = $part_name;
-            $table_row['part_type'] = $part_type;
-            $this->create_part( $part_type, $table_row );
+            $table_row['part_type_slug'] = $part_type_slug;
+
+            if( $delete && $current_part_type_slug != $part_type_slug ){
+              $this->delete_parts_by_type( $part_type_slug );
+              $current_part_type_slug = $part_type_slug;
+            }
+
+            $this->create_part( $table_row );
 
             $table_rows[$row] = $table_row;
             $row++;
@@ -108,12 +100,11 @@ class Fox_Parts_CLI extends WP_CLI_Command{
     /**
      * Creates a part.
      *
-     * @param      string   $part_type   The part type
      * @param      array    $part_array  The part array
      *
      * @return     int  Post ID of the new part.
      */
-    private function create_part( $part_type, $part_array ){
+    private function create_part( $part_array ){
       $part_exists = get_page_by_title( $part_array['name'], OBJECT, 'foxpart' );
       if( ! is_null( $part_exists ) ){
         WP_CLI::line('SKIPPING: Part `' . $part_array['name'] . '` exists.');
@@ -126,12 +117,12 @@ class Fox_Parts_CLI extends WP_CLI_Command{
         'post_status' => 'publish'
       ]);
 
-      $add_terms = wp_set_object_terms( $post_id, $part_array['part_type'], 'part_type' );
+      $add_terms = wp_set_object_terms( $post_id, $part_array['part_type_slug'], 'part_type' );
       if( is_wp_error( $add_terms ) )
         WP_CLI::error( 'Error assigning `part_type`. (' . $add_terms->get_error_message() . ').' );
 
       $attributes = [];
-      switch ( $part_array['part_type'] ) {
+      switch ( $part_array['part_type_slug'] ) {
         case 'crystal':
           $attributes = ['from_frequency','to_frequency','size','package_option','tolerance','stability','optemp'];
           break;
@@ -160,18 +151,49 @@ class Fox_Parts_CLI extends WP_CLI_Command{
     }
 
     /**
+     * Deletes all parts for a given `part_type` slug
+     *
+     * @param      <string>  $part_type   The part_type slug
+     */
+    private function delete_parts_by_type( $part_type_slug = null ){
+      if( is_null( $part_type_slug ) )
+        return false;
+
+      // Delete all CPTs of the part_type
+      WP_CLI::line( 'Deleting all Fox Parts of of part_type `' . $part_type_slug . '`.' );
+      $term = get_term_by( 'slug', $part_type_slug, 'part_type', ARRAY_A );
+      if( $term ){
+        $term_id = intval( $term['term_id'] );
+        global $wpdb;
+        $wpdb->query(
+          $wpdb->prepare( 'DELETE a,b,c
+            FROM ' . $wpdb->prefix . 'posts a
+            LEFT JOIN ' . $wpdb->prefix . 'term_relationships b ON ( a.ID = b.object_id )
+            LEFT JOIN ' . $wpdb->prefix . 'postmeta c ON ( a.ID = c.post_id )
+            LEFT JOIN ' . $wpdb->prefix . 'term_taxonomy d ON ( d.term_taxonomy_id = b.term_taxonomy_id )
+            LEFT JOIN ' . $wpdb->prefix . 'terms e ON ( e.term_id = d.term_id )
+            WHERE e.term_id=%d', $term_id )
+          );
+
+        WP_CLI::success('All `' . $part_type_slug . '` parts were deleted.');
+        return true;
+      }
+      return false;
+    }
+
+    /**
      * Gets the part name.
      *
-     * @param      string $part_type   The part type
+     * @param      string $part_type_slug   The part type
      * @param      array  $part_array  The part array
      *
      * @return     boolean|string  The part name.
      */
-    private function get_part_name( $part_type, $part_array ){
+    private function get_part_name( $part_type_slug, $part_array ){
 
       $name = false;
 
-      switch( $part_type ){
+      switch( $part_type_slug ){
         case 'crystal':
           $name_components = ['F','part_type','size','package_option','tolerance','stability','_','optemp'];
           break;
@@ -201,6 +223,19 @@ class Fox_Parts_CLI extends WP_CLI_Command{
         }
       }
       return $name;
+    }
+
+    /**
+     * Returns the part type slug.
+     *
+     * @param      <string>  $part_type  The part type code
+     *
+     * @return     <string>  The part type slug.
+     */
+    private function get_part_type_slug( $part_type ){
+      $part_types_array = FOXPC_PART_TYPES;
+
+      return $part_types_array[$part_type];
     }
 }
 
