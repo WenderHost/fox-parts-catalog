@@ -4,7 +4,7 @@ namespace FoxParts\restapi;
 function init_rest_api(){
 
   // Get available options for a given part configuration
-  register_rest_route( 'foxparts/v1', 'get_options/(?P<part>(F)([a-zA-Z0-9_\[\],]{6,32})-[0-9]+.[0-9]+)/(?P<package_type>(SMD|Pin-Thru))', [
+  register_rest_route( 'foxparts/v1', 'get_options/(?P<part>(F)([a-zA-Z0-9_\[\],]{6,32})-[0-9]+.[0-9]+)/(?P<package_type>(SMD|Pin-Thru))/(?P<frequency_unit>(MHz|kHz))', [
     'methods' => 'GET',
     'callback' => __NAMESPACE__ . '\\get_options'
   ]);
@@ -26,6 +26,7 @@ function get_options( $data ){
 
   $part = $data['part'];
   $package_type = strtolower($data['package_type']);
+  $frequency_unit = strtolower($data['frequency_unit']);
   $part_array = explode( '-', $part );
   $options = $part_array[0];
   $frequency = $part_array[1];
@@ -39,6 +40,7 @@ function get_options( $data ){
   $configuredPart = [];
   $configuredPart['frequency'] = $frequency;
   $configuredPart['package_type'] = $package_type;
+  $configuredPart['frequency_unit'] = $frequency_unit;
   $configuredPart['number'] = $options;
 
   /**
@@ -105,8 +107,8 @@ function get_options( $data ){
   if( isset( $configuredPart['frequency'] )
       && '' != $configuredPart['frequency']
       && '_' != $configuredPart['frequency']
-      && '0.0' != $configuredPart['frequency']
-      && '0.032768' != $configuredPart['frequency'] ){
+      && '0.0' != $configuredPart['frequency'] ){ // && '0.032768' != $configuredPart['frequency']
+
     $frequency = (float) $configuredPart['frequency'];
 
     if( 'khz' == $frequency_unit )
@@ -182,36 +184,6 @@ function get_options( $data ){
       }
 
   }
-
-  /*
-  if( 'C' == $configuredPart['part_type'] ){
-    // If we have a `package_option`, query by that option
-    if( isset( $configuredPart['package_option'] ) && '' != $configuredPart['package_option'] && ! stristr( $configuredPart['package_option'], '_' ) ){
-      $meta_query[] = [
-        'key' => 'package_option',
-        'value' => $configuredPart['package_option'],
-        'compare' => '='
-      ];
-    } else {
-      // If we don't have a `package_option`, narrow our results based on the `package_type`
-      $pin_thru_crystal_part_types = ['ST','UT','0T'];
-      $compare = ( 'pin-thru' == $configuredPart['package_type'] )? 'IN' : 'NOT IN';
-      $meta_query[] = [
-        'key' => 'package_option',
-        'value' => $pin_thru_crystal_part_types,
-        'compare' => $compare,
-      ];
-    }
-  } else {
-    if( isset( $configuredPart['package_option'] ) && '' != $configuredPart['package_option'] && ! stristr( $configuredPart['package_option'], '_' ) ){
-      $meta_query[] = [
-        'key' => 'package_option',
-        'value' => $configuredPart['package_option'],
-        'compare' => '='
-      ];
-    }
-  }
-  /**/
 
   // All other options
   $allowed_meta_queries = ['size','output','tolerance','voltage','stability','optemp'];
