@@ -108,19 +108,34 @@ function get_options( $data ){
       && '0.0' != $configuredPart['frequency']
       && '0.032768' != $configuredPart['frequency'] ){
     $frequency = (float) $configuredPart['frequency'];
+
+    if( 'khz' == $frequency_unit )
+      $frequency = (float) $frequency/1000;
+
+    /**
+     * WP_Query BUG for floating point no. and type = DECIMAL
+     *
+     * When `type` = DECIMAL for floating point numbers,
+     * the resulting SQL used by WordPress casts the meta field value
+     * as DECIMAL but the query seems to ignore everything after the
+     * decimal. To fix, we set the type to CHAR for numbers with a
+     * decimal.
+     */
+    $type = ( stristr( $frequency, '.') )? 'CHAR' : 'DECIMAL' ;
+
     $meta_query[] = [
       'relation' => 'AND',
       [
         'key' => 'from_frequency',
         'value' => $frequency,
         'compare' => '<=',
-        'type' => 'DECIMAL'
+        'type' => $type
       ],
       [
         'key' => 'to_frequency',
         'value' => $frequency,
         'compare' => '>=',
-        'type' => 'DECIMAL'
+        'type' => $type
       ]
     ];
   }
