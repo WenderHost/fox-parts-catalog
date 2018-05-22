@@ -320,7 +320,7 @@ function map_values_to_labels( $atts ){
         $labels = [
           '4ST' => 'HC49 2.6mm height',
           '9ST' => 'HC49 2.5mm height',
-          '4UT' => 'HC49U 13.46 height',
+          '4UT' => 'HC49U 13.46mm height',
           '80T' => 'HC80U',
           'T15' => '5.0x1.5 mm',
           'T26' => '6.0x2.0 mm',
@@ -369,24 +369,24 @@ function map_values_to_labels( $atts ){
 
     case 'voltage':
       $labels = [
-        'A' => '5 Volts +-10%',
-        'B' => '3.3 Volts +-5%',
-        'C' => '3.3 Volts +-10%',
-        'D' => '3 Volts +-5%',
-        'E' => '3 Volts +-10%',
-        'F' => '2.85 Volts +-5%',
-        'G' => '2.85 Volts +-10%',
-        'H' => '2.5 Volts +-5%',
-        'J' => '2.5 Volts +-10%',
-        'K' => '1.8 Volts +-5%',
-        'L' => '1.8 Volts +-10%',
-        'M' => '1.0 Volt +-5%',
-        'N' => '1.0 Volt +-10%',
-        'P' => '5 Volts +-5%',
-        'Q' => '2.8 Volts +-5%',
-        'R' => '2.8 Volts +-10%',
-        'S' => '2.7 Volts +-5%',
-        'T' => '2.7 Volts +-10%'
+        'A' => '5 Volts',
+        'P' => '5 Volts',
+        'B' => '3.3 Volts',
+        'C' => '3.3 Volts',
+        'D' => '3 Volts',
+        'E' => '3 Volts',
+        'F' => '2.85 Volts',
+        'G' => '2.85 Volts',
+        'Q' => '2.8 Volts',
+        'R' => '2.8 Volts',
+        'S' => '2.7 Volts',
+        'T' => '2.7 Volts',
+        'H' => '2.5 Volts',
+        'J' => '2.5 Volts',
+        'K' => '1.8 Volts',
+        'L' => '1.8 Volts',
+        'M' => '1.0 Volt',
+        'N' => '1.0 Volt',
       ];
       break;
 
@@ -398,23 +398,8 @@ function map_values_to_labels( $atts ){
   $values = [];
   if( 'output' == $args['setting'] )
     error_log('Mapping these values: ' . print_r($args['values'],true));
-  foreach ($args['values'] as $key => $value) {
-    /*
-    switch( $args['setting'] ){
-      case 'output':
-        // For Oscillator.Ouput, we only want to return valid labels
-        if( array_key_exists( $value, $labels ) ){
-          $label = $labels[$value];
-        } else {
-          continue 2;
-        }
-        break;
 
-      default:
-        $label = ( array_key_exists( $value, $labels ) )? $labels[$value] : 'no label (' . $value . ')';
-        break;
-    }
-    */
+  foreach ($args['values'] as $key => $value) {
 
     // Get our $label by Mapping $value to a label
     $label = ( array_key_exists( $value, $labels ) )? $labels[$value] : 'no label (' . $value . ')';
@@ -430,5 +415,6 @@ function map_values_to_labels( $atts ){
   }
   if( 'output' == $args['setting'] )
     error_log('output options = ' . print_r($mapped_values,true));
+
   return $mapped_values;
 }
