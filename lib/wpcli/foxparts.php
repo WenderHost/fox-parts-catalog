@@ -134,6 +134,10 @@ class Fox_Parts_CLI extends WP_CLI_Command{
         case 'oscillator':
           $attributes = ['from_frequency','to_frequency','size','output','voltage','stability','optemp'];
           break;
+
+        case 'tcxo':
+          $attributes = ['from_frequency','to_frequency','pin_1','size','output','voltage','stability','optemp'];
+          break;
       }
 
       if( 0 < count( $attributes ) ){
@@ -204,6 +208,10 @@ class Fox_Parts_CLI extends WP_CLI_Command{
 
         case 'oscillator':
           $name_components = ['F','part_type','size','output','voltage','stability','optemp'];
+          break;
+
+        case 'tcxo':
+          $name_components = ['F','part_type','size','output','pin_1','voltage','stability','optemp'];
           break;
 
         default:

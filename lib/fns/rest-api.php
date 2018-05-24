@@ -53,6 +53,7 @@ function get_options( $data ){
     'C' => ['part_type' => [0], 'size' => [1], 'package_option' => [2,3], 'tolerance' => [4], 'stability' => [5], 'load' => [6], 'optemp' => [7]],
     'K' => ['part_type' => [0], 'size' => [1,2,3], 'tolerance' => [4], 'stability' => [5], 'optemp' => [6]],
     'O' => ['part_type' => [0], 'size' => [1], 'output' => [2,3], 'voltage' => [4], 'stability' => [5], 'optemp' => [6]],
+    'T' => ['part_type' => [0], 'size' => [1], 'output' => [2], 'pin_1' => [3], 'voltage' => [4], 'stability' => [5], 'optemp' => [6]],
   ];
 
   if( ! array_key_exists( $part_type, $part_no_maps ) ){
@@ -186,7 +187,7 @@ function get_options( $data ){
   }
 
   // All other options
-  $allowed_meta_queries = ['size','output','tolerance','voltage','stability','optemp'];
+  $allowed_meta_queries = ['size','output','tolerance','voltage','stability','optemp','pin_1'];
   foreach ( $allowed_meta_queries as $meta_field ) {
     if( isset( $configuredPart[$meta_field] ) && '' != $configuredPart[$meta_field] ){
       $value = $configuredPart[$meta_field];
@@ -299,6 +300,11 @@ function map_values_to_labels( $atts ){
 
     case 'output':
       $labels = [
+        'A'  => 'Clipped Sine',
+        'C'  => 'Clipped Sine',
+        'G'  => 'Clipped Sine',
+        'H'  => 'HCMOS',
+        'S'  => 'HCMOS',
         'HB' => 'HCMOS',
         'HD' => 'HCMOS',
         'HH' => 'HCMOS',
@@ -312,6 +318,15 @@ function map_values_to_labels( $atts ){
         'LS' => 'LVDS',
         'SL' => 'HCSL',
         'HA' => 'AEC-Q200',
+      ];
+      break;
+
+    case 'pin_1':
+      $labels = [
+        'N' => 'No Connect',
+        'V' => 'Voltage Control',
+        'D' => 'E/D',
+        'T' => 'VC w/o mech. trimmer'
       ];
       break;
 
@@ -340,6 +355,15 @@ function map_values_to_labels( $atts ){
           'FSR' => '8.7x3.7 mm',
           'FSM' => '10.4x4.0 mm',
         ];
+      } else if( 'T' == $args['part_type'] ){
+        $labels = [
+          '1' => '2.0x1.6 mm',
+          '2' => '2.5x2.0 mm',
+          '3' => '3.2x2.5 mm',
+          '5' => '5.0x3.2 mm',
+          '7' => '7.0x5.0 mm',
+          '9' => '11.4x9.6 mm',
+        ];
       } else {
         $labels = [
           'A' => '1.2x1.0 mm',
@@ -360,7 +384,34 @@ function map_values_to_labels( $atts ){
       break;
 
     case 'stability':
-      $labels = ['M' => '-0.036+-1 ppm (Delta temp)E^2', 'I' => '-0.04 ppm (Delta Temp)E^2 max', 'O' => '-140 ~ +10 ppm', 'K' => '0.28 ppm', 'Q' => '0.37 ppm', 'U' => '0.5 ppm', 'T' => '1.0 ppm', 'S' => '1.5 ppm', 'H' => '10.0 ppm', 'G' => '100 ppb', 'A' => '100.0 ppm', 'Y' => '1000.0 ppm', 'F' => '15.0 ppm', 'R' => '2.0 ppm', 'P' => '2.5 ppm', 'E' => '20.0 ppm', 'V' => '200.0 ppm', 'D' => '25.0 ppm', 'N' => '3.0 ppm', 'C' => '30.0 ppm', 'L' => '5.0 ppm', 'B' => '50.0 ppm', 'W' => '70.0 ppm', 'J' => '8 ppm', 'Z' => 'Other', 'X' => 'Overall'];
+      $labels = [
+        'M' => '-0.036+-1 ppm (Delta temp)E^2',
+        'I' => '-0.04 ppm (Delta Temp)E^2 max',
+        'O' => '-140 ~ +10 ppm',
+        'K' => '0.28 ppm',
+        'Q' => '0.37 ppm',
+        'U' => '0.5 ppm',
+        'T' => '1.0 ppm',
+        'S' => '1.5 ppm',
+        'H' => '10.0 ppm',
+        'G' => '100 ppb',
+        'A' => '100.0 ppm',
+        'Y' => '1000.0 ppm',
+        'F' => '15.0 ppm',
+        'R' => '2.0 ppm',
+        'P' => '2.5 ppm',
+        'E' => '20.0 ppm',
+        'V' => '200.0 ppm',
+        'D' => '25.0 ppm',
+        'N' => '3.0 ppm',
+        'C' => '30.0 ppm',
+        'L' => '5.0 ppm',
+        'B' => '50.0 ppm',
+        'W' => '70.0 ppm',
+        'J' => '8 ppm',
+        'Z' => 'Other',
+        'X' => 'Overall'
+      ];
       break;
 
     case 'tolerance':

@@ -38,7 +38,8 @@ add_action( 'typerocket_loaded', function(){
     }
 
     $form = tr_form();
-    switch ( $terms[0]->slug ) {
+    $part_type = $terms[0]->slug;
+    switch ( $part_type ) {
       case 'crystal':
         echo $form->row(
           $form->text('FROM Frequency',['style' => 'max-width: 120px;']),
@@ -101,28 +102,50 @@ add_action( 'typerocket_loaded', function(){
         break;
 
       case 'oscillator':
+      case 'tcxo':
         echo $form->row(
           $form->text('FROM Frequency',['style' => 'max-width: 120px;']),
           $form->text('TO Frequency',['style' => 'max-width: 120px;'])
         );
-        $size_options = [
-          '1.2x1.0 mm' => 'A',
-          '1.6x1.2 mm' => '0',
-          '2.0x1.6 mm' => '1',
-          '2.5x2.0 mm' => '2',
-          '3.2x2.5 mm' => '3',
-          '4.0x2.5 mm' => '4',
-          '5.0x3.2 mm' => '5',
-          '6.0x3.5 mm' => '6',
-          '7.0x5.0 mm' => '7',
-          '10.0x4.5 mm' => '8',
-          '11.0x5.0 mm' => '8',
-          'HC49 SMD (4.5mm)' => '4SD',
-          'HC49 SMD (3.2mm)' => '9SD',
-        ];
+        switch ($part_type) {
+          case 'oscillator':
+            $size_options = [
+              '1.2x1.0 mm' => 'A',
+              '1.6x1.2 mm' => '0',
+              '2.0x1.6 mm' => '1',
+              '2.5x2.0 mm' => '2',
+              '3.2x2.5 mm' => '3',
+              '4.0x2.5 mm' => '4',
+              '5.0x3.2 mm' => '5',
+              '6.0x3.5 mm' => '6',
+              '7.0x5.0 mm' => '7',
+              '10.0x4.5 mm' => '8',
+              '11.0x5.0 mm' => '8',
+              'HC49 SMD (4.5mm)' => '4SD',
+              'HC49 SMD (3.2mm)' => '9SD',
+            ];
+            break;
+
+          default:
+            // TCXO size options
+            $size_options = [
+              '2.0x1.6 mm' => '1',
+              '2.5x2.0 mm' => '2',
+              '3.2x2.5 mm' => '3',
+              '5.0x3.2 mm' => '5',
+              '7.0x5.0 mm' => '7',
+              '11.4x9.6 mm' => '9',
+            ];
+            break;
+        }
+
+        $pin_1 = ( 'tcxo' == $part_type )? $form->text('Pin 1',['style' => 'max-width: 120px;']) : '';
+
+
         echo $form->row(
           $form->select('Size')->setOptions($size_options),
-          $form->text('Output',['style' => 'max-width: 120px;'])
+          $form->text('Output',['style' => 'max-width: 120px;']),
+          $pin_1
         );
         echo $form->row(
           $form->text('Voltage',['style' => 'max-width: 120px;']),
