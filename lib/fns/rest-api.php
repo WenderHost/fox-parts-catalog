@@ -54,6 +54,7 @@ function get_options( $data ){
     'K' => ['part_type' => [0], 'size' => [1,2,3], 'tolerance' => [4], 'stability' => [5], 'optemp' => [6]],
     'O' => ['part_type' => [0], 'size' => [1], 'output' => [2,3], 'voltage' => [4], 'stability' => [5], 'optemp' => [6]],
     'T' => ['part_type' => [0], 'size' => [1], 'output' => [2], 'pin_1' => [3], 'voltage' => [4], 'stability' => [5], 'optemp' => [6]],
+    'Y' => ['part_type' => [0], 'size' => [1], 'output' => [2], 'voltage' => [3], 'stability' => [4], 'optemp' => [5]],
   ];
 
   if( ! array_key_exists( $part_type, $part_no_maps ) ){

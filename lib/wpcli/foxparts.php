@@ -138,6 +138,10 @@ class Fox_Parts_CLI extends WP_CLI_Command{
         case 'tcxo':
           $attributes = ['from_frequency','to_frequency','pin_1','size','output','voltage','stability','optemp'];
           break;
+
+        case 'vcxo':
+          $attributes = ['from_frequency','to_frequency','size','output','voltage','stability','optemp'];
+          break;
       }
 
       if( 0 < count( $attributes ) ){
@@ -212,6 +216,10 @@ class Fox_Parts_CLI extends WP_CLI_Command{
 
         case 'tcxo':
           $name_components = ['F','part_type','size','output','pin_1','voltage','stability','optemp'];
+          break;
+
+        case 'vcxo':
+          $name_components = ['F','part_type','size','output','voltage','stability','optemp'];
           break;
 
         default:

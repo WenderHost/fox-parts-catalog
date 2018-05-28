@@ -103,6 +103,7 @@ add_action( 'typerocket_loaded', function(){
 
       case 'oscillator':
       case 'tcxo':
+      case 'vcxo':
         echo $form->row(
           $form->text('FROM Frequency',['style' => 'max-width: 120px;']),
           $form->text('TO Frequency',['style' => 'max-width: 120px;'])
