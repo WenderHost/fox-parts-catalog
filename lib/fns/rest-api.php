@@ -296,7 +296,32 @@ function map_values_to_labels( $atts ){
       break;
 
     case 'optemp':
-      $labels = ['B' => '-10 To +50 C', 'D' => '-10 To +60 C', 'E' => '-10 To +70 C', 'Q' => '-20 To +60 C', 'F' => '-20 To +70 C', 'Z' => '-20 To +75 C', 'N' => '-20 To +85 C', 'G' => '-30 To +70 C', 'H' => '-30 To +75 C', 'J' => '-30 To +80 C', 'K' => '-30 To +85 C', 'L' => '-35 To +80 C', 'V' => '-35 To +85 C', 'P' => '-40 To +105 C', 'I' => '-40 To +125 C', 'Y' => '-40 To +75 C', 'M' => '-40 To +85 C', 'R' => '-55 To +100 C', 'S' => '-55 To +105 C', 'T' => '-55 To +125 C', 'U' => '-55 To +85 C', 'A' => '0 To +50 C', 'C' => '0 To +70 C', 'W' => 'Other'];
+      $labels = [
+        'B' => '-10 To +50 C',
+        'D' => '-10 To +60 C',
+        'E' => '-10 To +70 C',
+        'Q' => '-20 To +60 C',
+        'F' => '-20 To +70 C',
+        'Z' => '-20 To +75 C',
+        'N' => '-20 To +85 C',
+        'G' => '-30 To +70 C',
+        'H' => '-30 To +75 C',
+        'J' => '-30 To +80 C',
+        'K' => '-30 To +85 C',
+        'L' => '-35 To +80 C',
+        'V' => '-35 To +85 C',
+        'P' => '-40 To +105 C',
+        'I' => '-40 To +125 C',
+        'Y' => '-40 To +75 C',
+        'M' => '-40 To +85 C',
+        'R' => '-55 To +100 C',
+        'S' => '-55 To +105 C',
+        'T' => '-55 To +125 C',
+        'U' => '-55 To +85 C',
+        'A' => '0 To +50 C',
+        'C' => '0 To +70 C',
+        'W' => 'Other'
+      ];
       break;
 
     case 'output':
@@ -385,38 +410,57 @@ function map_values_to_labels( $atts ){
       break;
 
     case 'stability':
-      $labels = [
-        'M' => '-0.036 ppm / (∆ºC)²',
-        'I' => '-0.04 ppm (∆ºC)² max',
-        'O' => '-140 ~ +10 ppm',
-        'K' => '0.28 ppm',
-        'Q' => '0.37 ppm',
-        'U' => '0.5 ppm',
-        'T' => '1.0 ppm',
-        'S' => '1.5 ppm',
-        'H' => '10.0 ppm',
-        'G' => '100 ppb',
-        'A' => '100.0 ppm',
-        'Y' => '1000.0 ppm',
-        'F' => '15.0 ppm',
-        'R' => '2.0 ppm',
-        'P' => '2.5 ppm',
-        'E' => '20.0 ppm',
-        'V' => '200.0 ppm',
-        'D' => '25.0 ppm',
-        'N' => '3.0 ppm',
-        'C' => '30.0 ppm',
-        'L' => '5.0 ppm',
-        'B' => '50.0 ppm',
-        'W' => '70.0 ppm',
-        'J' => '8 ppm',
-        'Z' => 'Other',
-        'X' => 'Overall'
-      ];
+      if( 'S' == $args['part_type'] ){
+        $labels = [
+          'A' => '±0.25% Center',
+          'B' => '±0.5% Center',
+          'C' => '±0.75% Center',
+          'D' => '±1.0% Center',
+          'E' => '±1.5% Center',
+          'F' => '±2.0% Center',
+          'G' => '-0.5% Down Spread',
+          'H' => '-1.0% Down Spread',
+          'J' => '-1.5% Down Spread',
+          'K' => '-2.0% Down Spread',
+          'L' => '-3.0% Down Spread',
+          'M' => '-4.0% Down Spread',
+          'N' => '±0.125% Center',
+          'P' => '-0.25% Down Spread',
+        ];
+      } else {
+        $labels = [
+          'M' => '-0.036 ppm / (∆ºC)²',
+          'I' => '-0.04 ppm (∆ºC)² max',
+          'O' => '-140 ~ +10 ppm',
+          'K' => '0.28 ppm',
+          'Q' => '0.37 ppm',
+          'U' => '0.5 ppm',
+          'T' => '1.0 ppm',
+          'S' => '1.5 ppm',
+          'H' => '10.0 ppm',
+          'G' => '100 ppb',
+          'A' => '100.0 ppm',
+          'Y' => '1000.0 ppm',
+          'F' => '15.0 ppm',
+          'R' => '2.0 ppm',
+          'P' => '2.5 ppm',
+          'E' => '20.0 ppm',
+          'V' => '200.0 ppm',
+          'D' => '25.0 ppm',
+          'N' => '3.0 ppm',
+          'C' => '30.0 ppm',
+          'L' => '5.0 ppm',
+          'B' => '50.0 ppm',
+          'W' => '70.0 ppm',
+          'J' => '8 ppm',
+          'Z' => 'Other',
+          'X' => 'Overall'
+        ];
+      }
       break;
 
     case 'tolerance':
-      $labels = ['M' => '-0.036+-1 ppm / (∆ºC)²', 'I' => '-0.04 ppm (∆ºC)² max', 'O' => '-140 ~ +10 ppm', 'K' => '0.28 ppm', 'Q' => '0.37 ppm', 'U' => '0.5 ppm', 'T' => '1.0 ppm', 'S' => '1.5 ppm', 'H' => '10.0 ppm', 'G' => '100 ppb', 'A' => '100.0 ppm', 'Y' => '1000.0 ppm', 'F' => '15.0 ppm', 'R' => '2.0 ppm', 'P' => '2.5 ppm', 'E' => '20.0 ppm', 'V' => '200.0 ppm', 'D' => '25.0 ppm', 'N' => '3.0 ppm', 'C' => '30.0 ppm', 'L' => '5.0 ppm', 'B' => '50.0 ppm', 'W' => '70.0 ppm', 'J' => '8 ppm', 'Z' => 'Other', 'X' => 'Overall'];
+      $labels = ['M' => '-0.036 ±1 ppm / (∆ºC)²', 'I' => '-0.04 ppm (∆ºC)² max', 'O' => '-140 ~ +10 ppm', 'K' => '0.28 ppm', 'Q' => '0.37 ppm', 'U' => '0.5 ppm', 'T' => '1.0 ppm', 'S' => '1.5 ppm', 'H' => '10.0 ppm', 'G' => '100 ppb', 'A' => '100.0 ppm', 'Y' => '1000.0 ppm', 'F' => '15.0 ppm', 'R' => '2.0 ppm', 'P' => '2.5 ppm', 'E' => '20.0 ppm', 'V' => '200.0 ppm', 'D' => '25.0 ppm', 'N' => '3.0 ppm', 'C' => '30.0 ppm', 'L' => '5.0 ppm', 'B' => '50.0 ppm', 'W' => '70.0 ppm', 'J' => '8 ppm', 'Z' => 'Other', 'X' => 'Overall'];
       break;
 
     case 'voltage':
