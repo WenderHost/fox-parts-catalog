@@ -386,8 +386,8 @@ function map_values_to_labels( $atts ){
 
     case 'stability':
       $labels = [
-        'M' => '-0.036+-1 ppm (Delta temp)E^2',
-        'I' => '-0.04 ppm (Delta Temp)E^2 max',
+        'M' => '-0.036 ppm / (∆ºC)²',
+        'I' => '-0.04 ppm (∆ºC)² max',
         'O' => '-140 ~ +10 ppm',
         'K' => '0.28 ppm',
         'Q' => '0.37 ppm',
