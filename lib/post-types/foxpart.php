@@ -155,6 +155,47 @@ add_action( 'typerocket_loaded', function(){
         );
         break;
 
+      case 'sso':
+        echo $form->row(
+          $form->text('FROM Frequency',['style' => 'max-width: 120px;']),
+          $form->text('TO Frequency',['style' => 'max-width: 120px;'])
+        );
+        echo $form->row(
+          $form->select('Size')->setOptions([
+            '5.0x3.2mm' => '5',
+            '7.0x5.0mm' => '7',
+          ]),
+          $form->select('Enable Type')->setOptions([
+            'Tristate'  => 'B',
+            'Standby'   => 'S',
+          ]),
+          $form->select('Voltage')->setOptions([
+            '2.5 Volts ±5%'   => 'H',
+            '3.3 Volts ±10%'  => 'C',
+          ]),
+          $form->select('Spread')->setOptions([
+            '±0.25% Center Spread'  => 'A',
+            '±0.5% Center Spread'   => 'B',
+            '±0.75% Center Spread'  => 'C',
+            '±1.0% Center Spread'   => 'D',
+            '±1.5% Center Spread'   => 'E',
+            '±2.0% Center Spread'   => 'F',
+            '-0.5% Down Spread'     => 'G',
+            '-1.0% Down Spread'     => 'H',
+            '-1.5% Down Spread'     => 'J',
+            '-2.0% Down Spread'     => 'K',
+            '-3.0% Down Spread'     => 'L',
+            '-4.0% Down Spread'     => 'M',
+            '±0.125 Center Spread'  => 'N',
+            '-0.25 Down Spread'     => 'P',
+          ]),
+          $form->select('OpTemp')->setOptions([
+            '0 to +70C'   => 'C',
+            '40 to +85C'  => 'M',
+          ])
+        );
+        break;
+
       default:
         echo '<div class="notice-info inline">No form defined for <code> ' . $terms[0]->slug . '</code>.</div>';
         break;

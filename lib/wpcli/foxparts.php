@@ -135,6 +135,10 @@ class Fox_Parts_CLI extends WP_CLI_Command{
           $attributes = ['from_frequency','to_frequency','size','output','voltage','stability','optemp'];
           break;
 
+        case 'sso':
+          $attributes = ['from_frequency','to_frequency','size','enable_type','voltage','spread','optemp'];
+          break;
+
         case 'tcxo':
           $attributes = ['from_frequency','to_frequency','pin_1','size','output','voltage','stability','optemp'];
           break;
@@ -214,6 +218,10 @@ class Fox_Parts_CLI extends WP_CLI_Command{
           $name_components = ['F','part_type','size','output','voltage','stability','optemp'];
           break;
 
+        case 'sso':
+          $name_components = ['F','part_type','size','enable_type','voltage','spread','optemp'];
+          break;
+
         case 'tcxo':
           $name_components = ['F','part_type','size','output','pin_1','voltage','stability','optemp'];
           break;
@@ -250,6 +258,9 @@ class Fox_Parts_CLI extends WP_CLI_Command{
      */
     private function get_part_type_slug( $part_type ){
       $part_types_array = FOXPC_PART_TYPES;
+
+      if( ! array_key_exists( $part_type, $part_types_array ) )
+        WP_CLI::error( 'No Part Type slug has been defined for part type `' . $part_type . '`.' );
 
       return $part_types_array[$part_type];
     }
