@@ -12,7 +12,6 @@ return [
         'seo',
         'dev',
         'theme-options',
-        'builder',
     ],
 
     /*
