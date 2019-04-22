@@ -36,11 +36,11 @@ class Fox_Parts_CLI extends WP_CLI_Command{
      * C,4,ST,3.2,80,F,B,D
      *
      * [--delete]
-     * : Delete existing parts of the type we're importing
+     * : Delete existing parts of the type we're importing. NOTE: If you don't use this flag, we'll skip the part if it already exists.
      *
      * ## EXAMPLES
      *
-     *  wp foxparts import --file=parts.csv --part_type=crystal
+     *  wp foxparts import parts.csv --delete
      *
      *  @when typerocket_loaded
      */
