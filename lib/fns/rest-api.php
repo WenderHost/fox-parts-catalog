@@ -27,7 +27,13 @@ function get_options( $data ){
   $part = $data['part'];
   $package_type = strtolower($data['package_type']);
   $frequency_unit = strtolower($data['frequency_unit']);
+
+  // TODO: We're no longer passing the dash between
+  // the part options and the frequency. Need to
+  // code an alternate method to split the frequency
+  // and the part options.
   $part_array = explode( '-', $part );
+
   $options = $part_array[0];
   $frequency = $part_array[1];
 
@@ -266,7 +272,7 @@ function get_part_type_slug( $part_type_code ){
  * Provided a setting, returns values mapped to labels.
  *
  * @param      array $atts{
- *    @type      string         $setting       The setting
+ *    @type      string         $setting       The  part setting (e.g. size, stability, load, etc.)
  *    @type      array          $values        The values
  *    @type      string         $package_type  SMD or Pin-Thru
  * }
@@ -288,7 +294,15 @@ function map_values_to_labels( $atts ){
 
   $mapped_values = [];
 
-  asort( $args['values'] );
+  //asort( $args['values'] );
+  usort( $args['values'], function($a,$b){
+    if( is_numeric($a) && ! is_numeric( $b ) )
+      return 1;
+    else if( ! is_numeric( $a ) && is_numeric( $b ) )
+      return -1;
+    else
+      return ($a < $b)? -1 : 1;
+  });
 
   $labels = [];
   switch( $args['setting'] ){
