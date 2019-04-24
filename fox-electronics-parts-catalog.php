@@ -20,8 +20,14 @@ require ( 'lib/typerocket/init.php' );
 
 // Load Post Types
 require ( 'lib/post-types/foxpart.php' );
+
+// Load Functions
+require ( 'lib/fns/enqueues.php' );
 require ( 'lib/fns/rest-api.php' );
 require ( 'lib/fns/save_post.php' );
+require ( 'lib/fns/shortcodes.php' );
+
+// WP-CLI
 require ( 'lib/wpcli/foxparts.php' );
 
 /*
