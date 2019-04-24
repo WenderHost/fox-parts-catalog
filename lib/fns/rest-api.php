@@ -18,9 +18,14 @@ add_action( 'rest_api_init', __NAMESPACE__ . '\\init_rest_api', 15 );
 /**
  * Retrieve available options given a part's configuration.
  *
- * @param      string $part The Fox part number
+ * @param      array $data {
+ *    @type string $part            Part number
+ *    @type string $package_type    Either `SMD` or `Pin-Thru`
+ *    @type string $frequency_unit  Either `MHz` or `kHz`
+ * }
+ * @param      bool  $return Return the data
  */
-function get_options( $data ){
+function get_options( $data, $return = false ){
 
   $response = new \stdClass();
 
@@ -247,7 +252,11 @@ function get_options( $data ){
       $response->partOptions[$key] = ( $mapped_values = map_values_to_labels(['setting' => $key, 'values' => $$var, 'package_type' => $package_type, 'part_type' => $part_type]) )? $mapped_values : $$var ;
   }
 
-  wp_send_json( $response, 200 );
+  if( $return ){
+    return $response;
+  } else {
+    wp_send_json( $response, 200 );
+  }
 }
 
 /**
