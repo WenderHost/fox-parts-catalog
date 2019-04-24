@@ -43,6 +43,7 @@ function foxselect( $atts ){
     $html = file_get_contents( plugin_dir_path( __FILE__ ) . '../html/foxselect.html' );
 
 
+    $configuredPartJs = '';
     if( $args['part_number'] ){
       $part_number = explode('/', $args['part_number'] );
       $data = [
@@ -66,10 +67,10 @@ function foxselect( $atts ){
           $configuredPart[$key] = $configuredPartValue;
         }
       }
+      $configuredPartJs = '<script type="text/javascript">var configuredPart = ' . wp_json_encode( $configuredPart ) . ';</script>';
 
-      $html = str_replace( ['{configuredPart}'], [ 'var configuredPart = ' . wp_json_encode( $configuredPart ) . ';' ], $html );
     }
-
+    $html = str_replace( '{configuredPart}', $configuredPartJs, $html );
     return $html;
   }
 }
