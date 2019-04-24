@@ -6,6 +6,8 @@ namespace FoxParts\enqueues;
  * Adds scripts/styles for FOXSelect.
  */
 function add_enqueues(){
+  wp_enqueue_script( 'foxselect-loader', plugin_dir_url( __FILE__ ) . '../js/foxselect-loader.js', ['jquery'], filemtime( plugin_dir_path( __FILE__ ) . '../js/foxselect-loader.js' ), true );
+
   // Register FOXSelect React App JS
   $scripts = glob( plugin_dir_path( __FILE__ ) . '../foxselect/static/js/main.*' );
   $x = 0;
