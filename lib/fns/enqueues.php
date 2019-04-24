@@ -39,4 +39,4 @@ function remove_enqueues(){
   if( stristr( $post->post_content, '[foxselect' ) )
     wp_dequeue_style( 'business-pro-min' );
 }
-\add_action( 'wp_print_styles', __NAMESPACE__ . '\\remove_enqueues', 100 );
+//\add_action( 'wp_print_styles', __NAMESPACE__ . '\\remove_enqueues', 100 );
