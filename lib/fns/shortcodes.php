@@ -75,3 +75,52 @@ function foxselect( $atts ){
   }
 }
 add_shortcode( 'foxselect', __NAMESPACE__ . '\\foxselect' );
+
+/**
+ * Displays a listing of FOX parts.
+ *
+ * @param      <type>  $atts   The atts
+ *
+ * @return     string  ( description_of_the_return_value )
+ */
+function product_list( $atts ){
+  static $count = 0;
+  static $lists = [];
+  $count++;
+  //$ids[] = $count;
+
+  $args = shortcode_atts( [
+    'dataurl' => null,
+    'package_type' => 'SMD',
+    'frequency_unit' => 'MHz'
+  ], $atts );
+
+  if( is_null( $args['dataurl'] ) )
+    return '<p>ERROR: Empty/Missing required attribute <code>dataurl</code>.</p>';
+
+  $lists[$count] = [
+    'dataurl' => $args['dataurl'],
+    'id' => $count,
+    'package_type' => $args['package_type'],
+    'frequency_unit' => $args['frequency_unit'],
+  ];
+
+  wp_enqueue_script( 'productlist' );
+  $upload_dir = wp_get_upload_dir();
+  wp_localize_script( 'productlist', 'productListVars', [
+    /*'dataurl' => $args['dataurl'],*/
+    'modalurl' => '#elementor-action%3Aaction%3Dpopup%3Aopen%20settings%3DeyJpZCI6IjMxMDQyIiwidG9nZ2xlIjpmYWxzZX0%3D',
+    'imageurl' => $upload_dir['baseurl'],
+    'lists' => $lists,
+  ]);
+
+  add_action( 'wp_footer', __NAMESPACE__ . '\\load_product_list_template' );
+
+  return '<div id="product-list-' . $count . '">Loading product list...</div>';
+}
+add_shortcode( 'productlist', __NAMESPACE__ . '\\product_list' );
+
+function load_product_list_template(){
+  echo file_get_contents( plugin_dir_path( __FILE__ ) . '../handlebars/product-list.html' );
+}
+

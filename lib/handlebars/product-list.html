@@ -1,0 +1,59 @@
+<style type="text/css">
+ul.productlist{
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: 0;
+  list-style: none;
+}
+ul.productlist li{
+  width: calc(100%/5 - 1%);
+  margin: 0 .5% 5% .5%;
+  min-height: 250px;
+  text-align: center;
+  list-style: none;
+  display: inline-block;
+}
+ul.productlist .productimage{
+  width: 80px;
+  height: 67px;
+  overflow: hidden;
+  margin: 0 auto;
+}
+ul.productlist li.product{
+  display: flex;
+  flex-direction: column;
+  height: auto;
+}
+li.product .datasheet{
+  margin-top: auto;
+  margin-bottom: 1rem;
+}
+li.product .btn{
+  background: #cc3366;
+  border-radius: 3px;
+  color: #fff;
+  padding: 2px 12px;
+
+}
+</style>
+<script id="product-list-template" type="text/x-handlebars-template">
+<ul class="productlist">
+  {{#each this.products}}
+    <li class="product">
+
+        <div class="productimage"><a class="foxselect" style="display: block;" href="{{../modalurl}}" data-partnumber="F{{product_family}}____-0.0/{{package_type}}/{{frequency_unit}}"><img src="{{image}}" style="width: 80px;" /></a></div>
+        <h2><a class="foxselect" href="{{../modalurl}}" data-partnumber="F{{product_family}}____-0.0/{{package_type}}/{{frequency_unit}}">{{product_family}}</a></h2>
+        <p>
+          {{size}}
+          <br />{{frequency_range}}
+          {{#if line_3}}<br />{{line_3}}{{/if}}
+          {{#if line_4}}<br />{{line_4}}{{/if}}
+          {{#if line_5}}<br />{{line_5}}{{/if}}</p>
+        <div class="datasheet">{{#if data_sheet}}<a href="{{data_sheet}}" target="_blank">Download Datasheet</a>{{else}}&nbsp;{{/if}}</div>
+        <div class="open-foxselect"><a href="{{../modalurl}}" class="foxselect btn btn-sm btn-primary" data-partnumber="F{{product_family}}____-0.0/{{package_type}}/{{frequency_unit}}">Open in FOXSelect</a></div>
+
+    </li>
+  {{/each}}
+</ul>
+</script>
