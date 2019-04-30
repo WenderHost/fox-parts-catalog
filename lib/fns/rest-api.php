@@ -4,7 +4,7 @@ namespace FoxParts\restapi;
 function init_rest_api(){
 
   // Get available options for a given part configuration
-  register_rest_route( 'foxparts/v1', 'get_options/(?P<part>(F)([a-zA-Z0-9_\[\],]{6,32})-[0-9]+.[0-9]+)/(?P<package_type>(SMD|Pin-Thru))/(?P<frequency_unit>(MHz|kHz))', [
+  register_rest_route( 'foxparts/v1', 'get_options/(?P<part>(F)([a-zA-Z0-9_\[\],]{6,32})-[0-9]+.[0-9]+)/(?P<package_type>(SMD|Pin-Thru))/(?P<frequency_unit>(MHz|kHz|mhz|khz))', [
     'methods' => 'GET',
     'callback' => __NAMESPACE__ . '\\get_options'
   ]);
@@ -49,10 +49,13 @@ function get_options( $data, $return = false ){
   $part_type = $options_array[0];
 
   $configuredPart = [];
-  $configuredPart['frequency'] = $frequency;
-  $configuredPart['package_type'] = $package_type;
-  $configuredPart['frequency_unit'] = $frequency_unit;
-  $configuredPart['number'] = $options;
+  $configuredPart['frequency'] = ['label' => $frequency, 'value' => $frequency];
+  $configuredPart['package_type'] = ['label' => $package_type, 'value' => $package_type];
+
+  $frequency_unit_labels = ['mhz' => 'MHz', 'khz' => 'kHz'];
+  $configuredPart['frequency_unit'] = ['label' => $frequency_unit_labels[$frequency_unit], 'value' => $frequency_unit ];
+
+  $configuredPart['number'] = ['label' => $options, 'value' => $options];
 
   /**
    * FOX PART NUMBER MAPPINGS
@@ -102,10 +105,36 @@ function get_options( $data, $return = false ){
         $value .= $options_array[$id];
       }
     }
-    $configuredPart[$key] = $value;
+    //$configuredPart[$key] = $value;
+    $map_values_args = [
+      'setting' => $key,
+      'values' => [$value],
+      'package_type' => $package_type,
+      'part_type' => $part_type
+    ]; //
+
+    if(
+      'size' == $key &&
+      'pin-thru' == $package_type &&
+      'C' == $part_type
+    ){
+      $map_values_args['package_option'] = $options_array[2] . $options_array[3];
+      $map_values_args['pin-thru-size-label'] = true;
+    }
+    if( 'size' == $key )
+      error_log('$map_values_args = ' . print_r($map_values_args,true) . '; $options_array = ' . print_r($options_array,true));
+    $mapped_value = map_values_to_labels( $map_values_args );
+
+
+
+    $configuredPart[$key] = $mapped_value[0];
+
+    // In the FOXSelect React app, we call it `product_type` instead of `part_type`.
+    if( 'part_type' == $key )
+      $configuredPart['product_type'] = $mapped_value[0];
   }
   $response->configuredPart = $configuredPart;
-  error_log( 'configuredPart = ' . print_r( $configuredPart, true ) );
+  //error_log( 'configuredPart = ' . print_r( $configuredPart, true ) );
 
   $tax_query = [
     [
@@ -119,11 +148,11 @@ function get_options( $data, $return = false ){
 
   // Frequency
   if( isset( $configuredPart['frequency'] )
-      && '' != $configuredPart['frequency']
-      && '_' != $configuredPart['frequency']
-      && '0.0' != $configuredPart['frequency'] ){ // && '0.032768' != $configuredPart['frequency']
+      && '' != $configuredPart['frequency']['value']
+      && '_' != $configuredPart['frequency']['value']
+      && '0.0' != $configuredPart['frequency']['value'] ){ // && '0.032768' != $configuredPart['frequency']
 
-    $frequency = (float) $configuredPart['frequency'];
+    $frequency = (float) $configuredPart['frequency']['value'];
 
     if( 'khz' == $frequency_unit )
       $frequency = (float) $frequency/1000;
@@ -157,19 +186,19 @@ function get_options( $data, $return = false ){
   }
 
   // Package Option
-  switch($configuredPart['part_type']){
+  switch($configuredPart['part_type']['value']){
     case 'C':
       // If we have a `package_option`, query by that option
-      if( isset( $configuredPart['package_option'] ) && '' != $configuredPart['package_option'] && ! stristr( $configuredPart['package_option'], '_' ) ){
+      if( isset( $configuredPart['package_option'] ) && '' != $configuredPart['package_option']['value'] && ! stristr( $configuredPart['package_option']['value'], '_' ) ){
         $meta_query[] = [
           'key' => 'package_option',
-          'value' => $configuredPart['package_option'],
+          'value' => $configuredPart['package_option']['value'],
           'compare' => '='
         ];
       } else {
         // If we don't have a `package_option`, narrow our results based on the `package_type`
         $pin_thru_crystal_part_types = ['ST','UT','0T'];
-        $compare = ( 'pin-thru' == $configuredPart['package_type'] )? 'IN' : 'NOT IN';
+        $compare = ( 'pin-thru' == $configuredPart['package_type']['value'] )? 'IN' : 'NOT IN';
         $meta_query[] = [
           'key' => 'package_option',
           'value' => $pin_thru_crystal_part_types,
@@ -180,7 +209,7 @@ function get_options( $data, $return = false ){
 
     case 'K':
       $pin_thru_khzcrystal_part_types = ['T15','T26','T38'];
-      $compare = ( 'pin-thru' == $configuredPart['package_type'] )? 'IN' : 'NOT IN';
+      $compare = ( 'pin-thru' == $configuredPart['package_type']['value'] )? 'IN' : 'NOT IN';
       $meta_query[] = [
         'key' => 'size',
         'value' => $pin_thru_khzcrystal_part_types,
@@ -189,10 +218,10 @@ function get_options( $data, $return = false ){
       break;
 
     default:
-      if( isset( $configuredPart['package_option'] ) && '' != $configuredPart['package_option'] && ! stristr( $configuredPart['package_option'], '_' ) ){
+      if( isset( $configuredPart['package_option'] ) && '' != $configuredPart['package_option']['value'] && ! stristr( $configuredPart['package_option']['value'], '_' ) ){
         $meta_query[] = [
           'key' => 'package_option',
-          'value' => $configuredPart['package_option'],
+          'value' => $configuredPart['package_option']['value'],
           'compare' => '='
         ];
       }
@@ -202,8 +231,8 @@ function get_options( $data, $return = false ){
   // All other options
   $allowed_meta_queries = ['size','output','tolerance','voltage','stability','optemp','pin_1','spread','enable_type'];
   foreach ( $allowed_meta_queries as $meta_field ) {
-    if( isset( $configuredPart[$meta_field] ) && '' != $configuredPart[$meta_field] ){
-      $value = $configuredPart[$meta_field];
+    if( isset( $configuredPart[$meta_field] ) && '' != $configuredPart[$meta_field]['value'] ){
+      $value = $configuredPart[$meta_field]['value'];
       if( is_string( $value ) && stristr($value, '_' ) )
         continue;
 
@@ -225,7 +254,7 @@ function get_options( $data, $return = false ){
     'meta_query' => $meta_query,
   ]);
 
-  $response->message = ( ! $query->have_posts() )? '0 part options found (' . $data['part'] . ', ' . strlen( $configuredPart['number'] ) . ' chars in part no).' : $query->post_count . ' part options found.';
+  $response->message = ( ! $query->have_posts() )? '0 part options found (' . $data['part'] . ', ' . strlen( $configuredPart['number']['value'] ) . ' chars in part no).' : $query->post_count . ' part options found.';
   $response->availableParts = $query->post_count;
   error_log( $response->message );
 
@@ -251,6 +280,7 @@ function get_options( $data, $return = false ){
         //error_log( 'Size options for Pin-Thur: ' . print_r( $$var, true ) );
       $response->partOptions[$key] = ( $mapped_values = map_values_to_labels(['setting' => $key, 'values' => $$var, 'package_type' => $package_type, 'part_type' => $part_type]) )? $mapped_values : $$var ;
   }
+  //error_log('['. basename(__FILE__) .', line '. __LINE__ .'] $response:' . print_r($response,true));
 
   if( $return ){
     return $response;
@@ -281,9 +311,10 @@ function get_part_type_slug( $part_type_code ){
  * Provided a setting, returns values mapped to labels.
  *
  * @param      array $atts{
- *    @type      string         $setting       The  part setting (e.g. size, stability, load, etc.)
- *    @type      array          $values        The values
- *    @type      string         $package_type  SMD or Pin-Thru
+ *    @type      string         $setting             The part setting (e.g. size, stability, load, etc.)
+ *    @type      array          $values              The values
+ *    @type      string         $package_type        SMD or Pin-Thru
+ *    @type      bool           $pin-thru-size-label Return with correct label for a Pin-Thru part size. (false)
  * }
  *
  * @return     array|boolean  Returns the values mapped to labels.
@@ -291,11 +322,13 @@ function get_part_type_slug( $part_type_code ){
 function map_values_to_labels( $atts ){
 
   $args = shortcode_atts([
-    'setting'         => null,
-    'values'          => [],
-    'package_type'    => 'SMD',
-    'package_option'  => null,
-    'part_type'       => null,
+    'setting'               => null,
+    'values'                => [],
+    'package_type'          => 'SMD',
+    'package_option'        => null,
+    'part_type'             => null,
+    'product_type'          => null,
+    'pin-thru-size-label'   => false,
   ], $atts );
 
   if( 0 == count( $args['values'] ) || ! is_array( $args['values'] ) )
@@ -355,6 +388,18 @@ function map_values_to_labels( $atts ){
       ];
       break;
 
+    case 'part_type':
+    case 'product_type':
+      $labels = [
+        'C' => 'Crystal',
+        'K' => 'Crystal',
+        'O' => 'Oscillator',
+        'T' => 'TCXO',
+        'Y' => 'VC-TCXO/VCXO',
+        'S' => 'SSO',
+      ];
+      break;
+
     case 'output':
       $labels = [
         'A'  => 'Clipped Sine',
@@ -398,7 +443,7 @@ function map_values_to_labels( $atts ){
           'T26' => '6.0x2.0 mm',
           'T38' => '8.0x3.0 mm',
         ];
-      } else if( 'K' == $args['part_type'] ) {
+      } else if( 'K' == $args['part_type'] || 'K' == $args['product_type'] ) {
         $labels = [
           '161' => '1.6x1.0 mm',
           '122' => '2.0x1.2 mm',
@@ -412,7 +457,7 @@ function map_values_to_labels( $atts ){
           'FSR' => '8.7x3.7 mm',
           'FSM' => '10.4x4.0 mm',
         ];
-      } else if( 'T' == $args['part_type'] ){
+      } else if( 'T' == $args['part_type'] || 'T' == $args['product_type'] ){
         $labels = [
           '1' => '2.0x1.6 mm',
           '2' => '2.5x2.0 mm',
@@ -523,13 +568,36 @@ function map_values_to_labels( $atts ){
   }
 
   $values = [];
-  if( 'output' == $args['setting'] )
-    error_log('Mapping these values: ' . print_r($args['values'],true));
 
   foreach ($args['values'] as $key => $value) {
 
     // Get our $label by Mapping $value to a label
-    $label = ( array_key_exists( $value, $labels ) )? $labels[$value] : 'no label (' . $value . ')';
+
+    /*
+    if(
+      'size' == $args['setting']
+      && 'pin-thru' == strtolower( $args['package_type'] )
+      && ! is_null( $args['package_option'] )
+      && $args['pin-thru-size-label']
+    ){
+      $label = $labels[ $value . $args['package_option'] ];
+    } else {
+      $label = ( array_key_exists( $value, $labels ) )? $labels[$value] : 'no label (' . $value . ')';
+    }
+    */
+    if( 'size' == $args['setting'] ){
+      error_log( 'Mapping to `size`. $args = ' . print_r( $args, true ) );
+    }
+
+    if( array_key_exists( $value, $labels ) ){
+      $label = $labels[$value];
+    } else if( 'size' == $args['setting'] && ! is_null( $args['package_option'] ) && array_key_exists( $value . $args['package_option'], $labels ) ){
+      $label = $labels[ $value . $args['package_option'] ];
+    } else {
+      $label = 'no label (' . $value . ')';
+    }
+
+
     $values[$label][] = $value;
 
     unset($labels[$value],$args['values'][$key]);
@@ -540,8 +608,6 @@ function map_values_to_labels( $atts ){
       }
     }
   }
-  if( 'output' == $args['setting'] )
-    error_log('output options = ' . print_r($mapped_values,true));
 
   return $mapped_values;
 }
