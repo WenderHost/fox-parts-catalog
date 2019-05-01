@@ -121,11 +121,8 @@ function get_options( $data, $return = false ){
       $map_values_args['package_option'] = $options_array[2] . $options_array[3];
       $map_values_args['pin-thru-size-label'] = true;
     }
-    if( 'size' == $key )
-      error_log('$map_values_args = ' . print_r($map_values_args,true) . '; $options_array = ' . print_r($options_array,true));
+
     $mapped_value = map_values_to_labels( $map_values_args );
-
-
 
     $configuredPart[$key] = $mapped_value[0];
 
@@ -236,6 +233,16 @@ function get_options( $data, $return = false ){
       if( is_string( $value ) && stristr($value, '_' ) )
         continue;
 
+      /** MULTIVARIATE VALUES
+        *
+        * Some parts supply multiple values for one option (e.g. C,G when choosing
+        * `Clipped Sine` for `output` prior to selecting the `Pin 1 Connection`). When this
+        * happens, we convert/explode the value into an array to check against both in our
+        * meta query:
+       */
+      if( stristr( $value, ',' ) )
+        $value = explode(',', $value );
+
       $compare = ( is_array( $value ) )? 'IN' : '=';
       $meta_query[] = [
         'key' => $meta_field,
@@ -245,7 +252,7 @@ function get_options( $data, $return = false ){
     }
   }
 
-  //error_log( '$meta_query = ' . print_r( $meta_query, true ) . '; $tax_query = ' . print_r( $tax_query, true ) );
+  error_log( '$meta_query = ' . print_r( $meta_query, true ) . '; $tax_query = ' . print_r( $tax_query, true ) );
 
   $query = new \WP_Query([
     'post_type' => 'foxpart',
@@ -394,8 +401,8 @@ function map_values_to_labels( $atts ){
         'C' => 'Crystal',
         'K' => 'Crystal',
         'O' => 'Oscillator',
-        'T' => 'TCXO',
-        'Y' => 'VC-TCXO/VCXO',
+        'T' => 'TCXO/VC-TCXO',
+        'Y' => 'VCXO',
         'S' => 'SSO',
       ];
       break;
@@ -585,25 +592,57 @@ function map_values_to_labels( $atts ){
       $label = ( array_key_exists( $value, $labels ) )? $labels[$value] : 'no label (' . $value . ')';
     }
     */
-    if( 'size' == $args['setting'] ){
-      error_log( 'Mapping to `size`. $args = ' . print_r( $args, true ) );
-    }
 
-    if( array_key_exists( $value, $labels ) ){
+    if( 'output' == $args['setting'] )
+      error_log( 'Mapping to `'.$args['setting'].'`. $args = ' . print_r( $args, true ) );
+
+    if( ! is_array( $value ) && array_key_exists( $value, $labels ) ){
       $label = $labels[$value];
     } else if( 'size' == $args['setting'] && ! is_null( $args['package_option'] ) && array_key_exists( $value . $args['package_option'], $labels ) ){
       $label = $labels[ $value . $args['package_option'] ];
+    } else if( is_array( $value ) ){
+      // Sometimes our $value is an array. Example: TCXOs might come in
+      // like so: FT1[C,G]____-25.0. The `output` is getting sent as
+      // being a `C` or a `G`. We don't know until the user choses the
+      // Pin 1 Connection. In this case, the `output` value comes here
+      // as an array, and the following handles that scenario:
+      $label = '';
+      foreach( $value as $label_array_key ){
+        if( ! empty( $label ) && $label != $labels[$label_array_key] ){
+          $label.= ', ' . $labels[$label_array_key];
+        } else {
+          $label = $labels[$label_array_key];
+        }
+      }
+      if( empty( $label ) )
+        $label = 'no label (' . implode( ', ', $value ) . ')';
     } else {
       $label = 'no label (' . $value . ')';
     }
 
-
     $values[$label][] = $value;
 
-    unset($labels[$value],$args['values'][$key]);
+    unset($args['values'][$key]);
+    if( 'output' == $args['setting'] )
+      error_log('$labels = '. print_r($labels,true). '; $key = ' . $key );
+    if( is_array( $value ) ){
+      foreach ($value as $label_array_key ) {
+        unset( $labels[$label_array_key] );
+      }
+    } else {
+      unset($labels[$value]);
+    }
+
 
     if( 0 == count( $args['values'] ) ){
       foreach( $values as $label => $value ){
+        // Multi-variate options come in with $value[0] as an
+        // array of possible options. We need to move those
+        // options up to $value so we can map them inside
+        // $mapped_values[].
+        if( is_array( $value[0] ) )
+          $value = $value[0];
+
         $mapped_values[] = ['value' => implode( ',', $value ), 'label' => $label ];
       }
     }
