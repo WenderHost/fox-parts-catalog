@@ -65,7 +65,7 @@ function get_options( $data, $return = false ){
    */
   $part_no_maps = [
     'C' => ['part_type' => [0], 'size' => [1], 'package_option' => [2,3], 'tolerance' => [4], 'stability' => [5], 'load' => [6], 'optemp' => [7]],
-    'K' => ['part_type' => [0], 'size' => [1,2,3], 'tolerance' => [4], 'stability' => [5], 'optemp' => [6]],
+    'K' => ['part_type' => [0], 'size' => [1,2,3], 'tolerance' => [4], 'stability' => [5], 'load' => [6], 'optemp' => [7]],
     'O' => ['part_type' => [0], 'size' => [1], 'output' => [2,3], 'voltage' => [4], 'stability' => [5], 'optemp' => [6]],
     'T' => ['part_type' => [0], 'size' => [1], 'output' => [2], 'pin_1' => [3], 'voltage' => [4], 'stability' => [5], 'optemp' => [6]],
     'Y' => ['part_type' => [0], 'size' => [1], 'output' => [2], 'voltage' => [3], 'stability' => [4], 'optemp' => [5]],
@@ -283,8 +283,7 @@ function get_options( $data, $return = false ){
             $$var[] = $option;
         }
       }
-      //if( 'size' == $key && 'C' == $part_type && $package_type == 'pin-thru' )
-        //error_log( 'Size options for Pin-Thur: ' . print_r( $$var, true ) );
+
       $response->partOptions[$key] = ( $mapped_values = map_values_to_labels(['setting' => $key, 'values' => $$var, 'package_type' => $package_type, 'part_type' => $part_type]) )? $mapped_values : $$var ;
   }
   //error_log('['. basename(__FILE__) .', line '. __LINE__ .'] $response:' . print_r($response,true));
@@ -363,7 +362,17 @@ function map_values_to_labels( $atts ){
       break;
 
     case 'load':
-      $labels = ['B' => '6 pF', 'C' => '4 pF', 'D' => '8 pF', 'E' => '10 pF', 'G' => '12 pF', 'H' => '12.5 pF', 'J' => '15 pF', 'K' => '16 pF', 'L' => '18 pF', 'M' => '20 pF', 'N' => '22 pF', 'P' => '27 pF', 'Q' => '30 pF', 'R' => '32 pF', 'S' => '33 pF', 'T' => '50 pF', 'U' => '13 pF', 'V' => '7 pF', 'W' => '9 pF', 'X' => '14 pF', 'Y' => '19 pF'];
+      if( 'K' == $args['part_type'] || 'K' == $args['product_type'] ){
+        $labels = [
+          'B' => '6pF',
+          'V' => '7pF',
+          'D' => '8pF',
+          'W' => '9pF',
+          'H' => '12.5pF',
+        ];
+      } else {
+        $labels = ['B' => '6pF', 'C' => '4pF', 'D' => '8pF', 'E' => '10pF', 'G' => '12pF', 'H' => '12.5pF', 'J' => '15pF', 'K' => '16pF', 'L' => '18pF', 'M' => '20pF', 'N' => '22pF', 'P' => '27pF', 'Q' => '30pF', 'R' => '32pF', 'S' => '33pF', 'T' => '50pF', 'U' => '13pF', 'V' => '7pF', 'W' => '9pF', 'X' => '14pF', 'Y' => '19pF'];
+      }
       break;
 
     case 'optemp':
@@ -579,22 +588,8 @@ function map_values_to_labels( $atts ){
   foreach ($args['values'] as $key => $value) {
 
     // Get our $label by Mapping $value to a label
-
-    /*
-    if(
-      'size' == $args['setting']
-      && 'pin-thru' == strtolower( $args['package_type'] )
-      && ! is_null( $args['package_option'] )
-      && $args['pin-thru-size-label']
-    ){
-      $label = $labels[ $value . $args['package_option'] ];
-    } else {
-      $label = ( array_key_exists( $value, $labels ) )? $labels[$value] : 'no label (' . $value . ')';
-    }
-    */
-
-    if( 'output' == $args['setting'] )
-      error_log( 'Mapping to `'.$args['setting'].'`. $args = ' . print_r( $args, true ) );
+    //if( 'load' == $args['setting'] )
+    //  error_log( 'Mapping to `'.$args['setting'].'`. $args = ' . print_r( $args, true ) );
 
     if( ! is_array( $value ) && array_key_exists( $value, $labels ) ){
       $label = $labels[$value];
@@ -623,8 +618,7 @@ function map_values_to_labels( $atts ){
     $values[$label][] = $value;
 
     unset($args['values'][$key]);
-    //if( 'output' == $args['setting'] )
-    //  error_log('$labels = '. print_r($labels,true). '; $key = ' . $key );
+
     if( is_array( $value ) ){
       foreach ($value as $label_array_key ) {
         unset( $labels[$label_array_key] );
@@ -635,8 +629,6 @@ function map_values_to_labels( $atts ){
 
 
     if( 0 == count( $args['values'] ) ){
-
-
       foreach( $values as $label => $value ){
         // Multi-variate options come in with $value[0] as an
         // array of possible options. We need to move those
@@ -648,6 +640,14 @@ function map_values_to_labels( $atts ){
         $mapped_values[] = ['value' => implode( ',', $value ), 'label' => $label ];
       }
     }
+  }
+
+  if( 'load' == $args['setting'] && 1 == count( $mapped_values ) && empty( $mapped_values[0]['value'] ) ){
+    $mapped_values = [];
+    foreach( $labels as $value => $label ){
+      $mapped_values[] = ['value' => $value, 'label' => $label];
+    }
+
   }
 
   usort( $mapped_values, function( $a, $b ){
