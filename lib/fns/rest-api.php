@@ -252,7 +252,7 @@ function get_options( $data, $return = false ){
     }
   }
 
-  error_log( '$meta_query = ' . print_r( $meta_query, true ) . '; $tax_query = ' . print_r( $tax_query, true ) );
+  //error_log( '$meta_query = ' . print_r( $meta_query, true ) . '; $tax_query = ' . print_r( $tax_query, true ) );
 
   $query = new \WP_Query([
     'post_type' => 'foxpart',
@@ -623,8 +623,8 @@ function map_values_to_labels( $atts ){
     $values[$label][] = $value;
 
     unset($args['values'][$key]);
-    if( 'output' == $args['setting'] )
-      error_log('$labels = '. print_r($labels,true). '; $key = ' . $key );
+    //if( 'output' == $args['setting'] )
+    //  error_log('$labels = '. print_r($labels,true). '; $key = ' . $key );
     if( is_array( $value ) ){
       foreach ($value as $label_array_key ) {
         unset( $labels[$label_array_key] );
@@ -635,6 +635,8 @@ function map_values_to_labels( $atts ){
 
 
     if( 0 == count( $args['values'] ) ){
+
+
       foreach( $values as $label => $value ){
         // Multi-variate options come in with $value[0] as an
         // array of possible options. We need to move those
@@ -647,6 +649,10 @@ function map_values_to_labels( $atts ){
       }
     }
   }
+
+  usort( $mapped_values, function( $a, $b ){
+    return strnatcmp( $a['label'], $b['label'] );
+  });
 
   return $mapped_values;
 }
