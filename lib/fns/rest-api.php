@@ -451,7 +451,7 @@ function map_values_to_labels( $atts ){
     case 'size':
       if( 'pin-thru' == strtolower( $args['package_type'] ) ){
         $labels = [
-          '4ST' => 'HC49 2.6mm height',
+          '4ST' => 'HC49 3.6mm height',
           '9ST' => 'HC49 2.5mm height',
           '4UT' => 'HC49U 13.46mm height',
           '80T' => 'HC80U',
@@ -489,14 +489,15 @@ function map_values_to_labels( $atts ){
           '1' => '2.0x1.6 mm',
           '2' => '2.5x2.0 mm',
           '3' => '3.2x2.5 mm',
-          '4' => '4.0x2.5 mm',
+          /*'4' => '4.0x2.5 mm',*/
+          '4' => 'HC49 SMD (4.5mm)',
           '5' => '5.0x3.2 mm',
           '6' => '6.0x3.5 mm',
           '7' => '7.0x5.0 mm',
           '8' => '10.0x4.5 mm',
-          '8' => '11.0x5.0 mm',
-          '4SD' => 'HC49 SMD (4.5mm)',
-          '9SD' => 'HC49 SMD (3.2mm)'
+          /* '8' => '11.0x5.0 mm', */
+          /*'4SD' => 'HC49 SMD (4.5mm)',*/
+          '9' => 'HC49 SMD (3.2mm)' /* Actually this is a 9SD, so we have to account for this in FOXSelect */
         ];
       }
       break;
