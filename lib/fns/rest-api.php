@@ -157,13 +157,13 @@ function get_options( $data, $return = false ){
     /**
      * WP_Query BUG for floating point no. and type = DECIMAL
      *
-     * When `type` = DECIMAL for floating point numbers,
-     * the resulting SQL used by WordPress casts the meta field value
-     * as DECIMAL but the query seems to ignore everything after the
-     * decimal. To fix, we set the type to CHAR for numbers with a
-     * decimal.
+     * When `type` = DECIMAL for floating point numbers with a zero
+     * before the decimal, the resulting SQL used by WordPress casts
+     * the meta field value as DECIMAL but the query seems to ignore
+     * everything after the decimal. To fix, we set the type to CHAR
+     * for numbers with a zero before the decimal.
      */
-    $type = ( stristr( $frequency, '.') )? 'CHAR' : 'DECIMAL' ;
+    $type = ( stristr( $frequency, '.') && 0 == substr( $frequency, 0, 1 ) )? 'CHAR' : 'DECIMAL' ;
 
     $meta_query[] = [
       'relation' => 'AND',
@@ -252,7 +252,7 @@ function get_options( $data, $return = false ){
     }
   }
 
-  //error_log( '$meta_query = ' . print_r( $meta_query, true ) . '; $tax_query = ' . print_r( $tax_query, true ) );
+  error_log( '$meta_query = ' . print_r( $meta_query, true ) . '; $tax_query = ' . print_r( $tax_query, true ) );
 
   $query = new \WP_Query([
     'post_type' => 'foxpart',
@@ -343,6 +343,7 @@ function map_values_to_labels( $atts ){
   $mapped_values = [];
 
   //asort( $args['values'] );
+  /*
   usort( $args['values'], function($a,$b){
     if( is_numeric($a) && ! is_numeric( $b ) )
       return 1;
@@ -351,6 +352,7 @@ function map_values_to_labels( $atts ){
     else
       return ($a < $b)? -1 : 1;
   });
+  */
 
   $labels = [];
   switch( $args['setting'] ){
@@ -589,7 +591,7 @@ function map_values_to_labels( $atts ){
   foreach ($args['values'] as $key => $value) {
 
     // Get our $label by Mapping $value to a label
-    //if( 'load' == $args['setting'] )
+    //if( 'output' == $args['setting'] )
     //  error_log( 'Mapping to `'.$args['setting'].'`. $args = ' . print_r( $args, true ) );
 
     if( ! is_array( $value ) && array_key_exists( $value, $labels ) ){
