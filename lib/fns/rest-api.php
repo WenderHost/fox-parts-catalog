@@ -501,6 +501,9 @@ function map_values_to_labels( $atts ){
           /*'4SD' => 'HC49 SMD (4.5mm)',*/
           '9' => 'HC49 SMD (3.2mm)' /* Actually this is a 9SD, so we have to account for this in FOXSelect */
         ];
+
+        if( 'O' == $args['part_type'] || 'O' == $args['product_type'] )
+          $labels['8'] = '1.6x1.2 mm';
       }
       break;
 
@@ -578,6 +581,8 @@ function map_values_to_labels( $atts ){
         'L' => '1.8 Volts',
         'M' => '1.0 Volt',
         'N' => '1.0 Volt',
+        'V' => '1.7~3.63V',
+        'W' => '2.25~3.63V',
       ];
       break;
 
