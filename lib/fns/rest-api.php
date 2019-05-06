@@ -457,7 +457,7 @@ function map_values_to_labels( $atts ){
 
     case 'pin_1':
       $labels = [
-        'N' => 'Pin 1 Ground', // No Connect
+        'N' => 'Ground', // No Connect
         'V' => 'Voltage Control',
         'D' => 'E/D',
         'T' => 'VC w/o mech. trimmer'
