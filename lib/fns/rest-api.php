@@ -122,6 +122,15 @@ function get_options( $data, $return = false ){
       $map_values_args['pin-thru-size-label'] = true;
     }
 
+    // Exception for TCXO's
+    // - Normally N=Pin 1 Connection,
+    // - In `T9CN`, N=No Connect
+    // To account for this exception, we send along size info
+    if( 'pin_1' == $key && $configuredPart['size'] ){
+      $map_values_args['size'] = $configuredPart['size']['value'];
+      error_log('$key = '.$key.';$configuredPart[\'size\'] = ' . print_r( $configuredPart['size'], true) );
+    }
+
     $mapped_value = map_values_to_labels( $map_values_args );
 
     $configuredPart[$key] = $mapped_value[0];
@@ -252,7 +261,7 @@ function get_options( $data, $return = false ){
     }
   }
 
-  error_log( '$meta_query = ' . print_r( $meta_query, true ) . '; $tax_query = ' . print_r( $tax_query, true ) );
+  //error_log( '$meta_query = ' . print_r( $meta_query, true ) . '; $tax_query = ' . print_r( $tax_query, true ) );
 
   $query = new \WP_Query([
     'post_type' => 'foxpart',
@@ -283,8 +292,9 @@ function get_options( $data, $return = false ){
             $$var[] = $option;
         }
       }
+      $size = ( ! stristr($configuredPart['size']['value'], '_') )? $configuredPart['size']['value'] : '';
 
-      $response->partOptions[$key] = ( $mapped_values = map_values_to_labels(['setting' => $key, 'values' => $$var, 'package_type' => $package_type, 'part_type' => $part_type]) )? $mapped_values : $$var ;
+      $response->partOptions[$key] = ( $mapped_values = map_values_to_labels(['setting' => $key, 'values' => $$var, 'package_type' => $package_type, 'part_type' => $part_type, 'size' => $size ]) )? $mapped_values : $$var ;
   }
   //error_log('['. basename(__FILE__) .', line '. __LINE__ .'] $response:' . print_r($response,true));
 
@@ -335,7 +345,11 @@ function map_values_to_labels( $atts ){
     'part_type'             => null,
     'product_type'          => null,
     'pin-thru-size-label'   => false,
+    'size'                  => null,
   ], $atts );
+
+  if( 'pin_1' == $args['setting'] )
+    error_log('map_values_to_labels('.print_r($args,true).')');
 
   if( 0 == count( $args['values'] ) || ! is_array( $args['values'] ) )
     return false;
@@ -443,11 +457,13 @@ function map_values_to_labels( $atts ){
 
     case 'pin_1':
       $labels = [
-        'N' => 'No Connect',
+        'N' => 'Pin 1 Ground', // No Connect
         'V' => 'Voltage Control',
         'D' => 'E/D',
         'T' => 'VC w/o mech. trimmer'
       ];
+      if( ! is_null( $args['size'] ) && 9 == $args['size'] )
+        $labels['N'] = 'No Connect';
       break;
 
     case 'size':
