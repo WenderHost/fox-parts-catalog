@@ -5,6 +5,7 @@ ul.productlist{
   flex-wrap: wrap;
   padding: 0;
   list-style: none;
+  margin: 20px 0;
 }
 ul.productlist li{
   width: calc(100%/5 - 1%);
@@ -13,6 +14,25 @@ ul.productlist li{
   text-align: center;
   list-style: none;
   display: inline-block;
+}
+@media screen and (max-width: 920px){
+  ul.productlist li{
+    width: calc(100%/3 - 1%);
+  }
+}
+@media screen and (max-width: 659px){
+  ul.productlist li{
+    width: calc(100%/2 - 1%);
+  }
+}
+@media screen and (max-width: 640px){
+  ul.productlist{
+    display: block;
+  }
+  ul.productlist li{
+    width: 100%;
+    margin: 60px 0;
+  }
 }
 ul.productlist .productimage{
   width: 80px;
