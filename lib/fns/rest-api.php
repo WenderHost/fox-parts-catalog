@@ -9,6 +9,11 @@ function init_rest_api(){
     'callback' => __NAMESPACE__ . '\\get_options'
   ]);
 
+  register_rest_route( 'foxparts/v1', 'get_web_part', [
+    'methods' => 'GET',
+    'callback' => __NAMESPACE__ . '\\get_web_part'
+  ]);
+
   $enable_cors = defined('JWT_AUTH_CORS_ENABLE') ? JWT_AUTH_CORS_ENABLE : false;
   if( $enable_cors )
     header('Access-Control-Allow-Origin: *');
@@ -321,6 +326,125 @@ function get_part_type_slug( $part_type_code ){
   }
 
   return $part_types[$part_type_code];
+}
+
+/**
+ * Gets part details for the Salesforce API.
+ *
+ * @param      \WP_REST_Request    $request  The request
+ *
+ * @return     $object  The web part details.
+ */
+function get_web_part( \WP_REST_Request $request ){
+  if( is_wp_error( $request ) )
+    return $request;
+
+  if( ! isset( $_SESSION['SF_SESSION'] ) )
+    sf_login();
+
+  if( ! defined( 'FOXELECTRONICS_SF_API_ROUTE' ) )
+    return new \WP_Error( 'missingconst', __('Please make sure `FOXELECTRONICS_SF_API_ROUTE` is defined in your `wp-config.php`') );
+
+  $params = $request->get_params();
+  $partnum = $params['partnum'];
+  if( empty( $partnum ) )
+    return new \WP_Error( 'nopartnum', __('No `partnum` provided.') );
+  $query['partnum'] = $partnum;
+
+  $access_token  = $_SESSION['SF_SESSION']->access_token;
+  if( empty( $access_token ) )
+    return new \WP_Error( 'noaccesstoken', __('No Access Token provided.') );
+
+  $instance_url  = $_SESSION['SF_SESSION']->instance_url;
+  if( empty( $instance_url ) )
+    return new \WP_Error( 'noinstanceurl', __('No Instance URL provided.') );
+
+  $transient_key = 'foxpart_' . $partnum;
+
+  if( false === ( $response = get_transient( $transient_key ) ) ){
+    $request_url = trailingslashit( $instance_url ) . FOXELECTRONICS_SF_API_ROUTE . 'WebPart' . '?' . http_build_query( $query );
+
+    $response = wp_remote_get( $request_url, [
+      'method' => 'GET',
+      'timeout' => 30,
+      'redirection' => 5,
+      'headers' => [
+        'Authorization' => 'Bearer ' . $access_token,
+      ],
+    ]);
+
+    if( ! is_wp_error( $response ) ){
+      $data = json_decode( wp_remote_retrieve_body( $response ) );
+      $response = new \stdClass();
+      $response->data = $data;
+    }
+
+    set_transient( $transient_key , $response, HOUR_IN_SECONDS * 4 );
+  }
+
+  return $response;
+}
+
+/**
+ * Logs into SalesForce using Session ID Authentication.
+ *
+ * Upon a successful login, our Salesforce access credentials
+ * object is stored in $_SESSION['SF_SESSION'].
+ *
+ * Example:
+ *
+ * $_SESSION['SF_SESSION'] = {
+ *   "access_token": "00D0t0000000Pmo!AQUAQA67ZA36gbSdaQUwfYwYIuiybQThERXoUXACW70ZhIWerHgeTcOtvhJv.orEe_6D.eJxZUulx76qJ_u7DPs6ZWH34yE8",
+ *   "instance_url": "https://foxonline--foxpart1.cs77.my.salesforce.com",
+ *   "id": "https://test.salesforce.com/id/00D0t0000000PmoEAE/0050t000001o5DeAAI",
+ *   "token_type": "Bearer",
+ *   "issued_at": "1550173766327",
+ *   "signature": "buz6bzPJNBCkCBS1+ABC79hFOXRhLJMB3c1MTtRORFI="
+ * }
+ *
+ * @return    object      Login Response or WP Error.
+ */
+function sf_login(){
+  // Verify we have credentials we need to attempt an authentication:
+  $check_const = [
+    'FOXELECTRONICS_CLIENT_ID',
+    'FOXELECTRONICS_CLIENT_SECRET',
+    'FOXELECTRONICS_USERNAME',
+    'FOXELECTRONICS_PASSWORD',
+    'FOXELECTRONICS_SECURITY_TOKEN',
+    'FOXELECTRONICS_SF_AUTH_EP',
+  ];
+  foreach ($check_const as $const) {
+    if( ! defined( $const ) ){
+      return new \WP_Error( 'missingconst', __('Please make sure the following constants are defined in your `wp-config.php`: ' . implode( ', ', $check_const ) . '.') );
+    }
+  }
+
+  $args = [
+    'method' => 'POST',
+    'timeout' => 30,
+    'redirection' => 5,
+    'body' => [
+      'grant_type' => 'password',
+      'client_id' => FOXELECTRONICS_CLIENT_ID,
+      'client_secret' => FOXELECTRONICS_CLIENT_SECRET,
+      'username' => FOXELECTRONICS_USERNAME,
+      'password' => FOXELECTRONICS_PASSWORD . FOXELECTRONICS_SECURITY_TOKEN
+    ],
+  ];
+  //error_log('$args = ' . print_r( $args, true ));
+
+  // Login to SalesForce
+  $response = wp_remote_post( FOXELECTRONICS_SF_AUTH_EP, $args );
+
+  if( ! is_wp_error( $response ) ){
+    $data = json_decode( wp_remote_retrieve_body( $response ) );
+    $_SESSION['SF_SESSION'] = $data;
+    $response = new \stdClass();
+    $response->data = $data;
+  }
+
+  return $response;
 }
 
 /**
