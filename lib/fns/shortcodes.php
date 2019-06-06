@@ -13,7 +13,8 @@ namespace FoxParts\shortcodes;
  */
 function foxselect( $atts ){
   $args = shortcode_atts([
-    'part_number' => null
+    'part_number' => null,
+    'autoload' => false,
   ], $atts );
 
   wp_enqueue_style( 'foxselect-theme' );
@@ -21,9 +22,11 @@ function foxselect( $atts ){
   // Enqueue FOXSelect React App JS
   $scripts = glob( plugin_dir_path( __FILE__ ) . '../foxselect/static/js/main.*' );
   $x = 0;
+  $foxselect_last_script = 0;
   foreach( $scripts as $script ){
     if( '.js' == substr( $script, -3 ) ){
       wp_enqueue_script( 'foxselect-' . $x );
+      $foxselect_last_script = $x;
       $x++;
     }
   }
@@ -71,6 +74,10 @@ function foxselect( $atts ){
 
     }
     $html = str_replace( '{configuredPart}', $configuredPartJs, $html );
+
+    if( $args['autoload'] )
+      wp_add_inline_script( 'foxselect-' . $foxselect_last_script, "window.FoxSelect.init( document.getElementById('rootfoxselect') );", 'after' );
+
     return $html;
   }
 }
