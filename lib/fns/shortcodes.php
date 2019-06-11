@@ -12,6 +12,15 @@ namespace FoxParts\shortcodes;
  * @return     string  HTML DOM object to which FOXSelect attaches.
  */
 function foxselect( $atts ){
+  static $called = false;
+  if( $called ){
+    error_log('foxselect shortcode has been called. returning...');
+    return;
+  }
+
+  if( ! $called )
+    $called = true;
+
   $args = shortcode_atts([
     'part_number' => null,
     'autoload' => false,
@@ -45,7 +54,6 @@ function foxselect( $atts ){
   } else {
     $html = file_get_contents( plugin_dir_path( __FILE__ ) . '../html/foxselect.html' );
 
-
     $configuredPartJs = '';
     if( $args['part_number'] ){
       $part_number = explode('/', $args['part_number'] );
@@ -54,6 +62,7 @@ function foxselect( $atts ){
         'package_type' => $part_number[1],
         'frequency_unit' => $part_number[2]
       ];
+      error_log('$args = ' . print_r( $args, true ) . "\n\$data = " . print_r($data, true) );
       $part_options_json = \FoxParts\restapi\get_options( $data, true );
 
       $valid_external_part_options = ['part_type','size','frequency','tolerance','stability','load','optemp'];
@@ -65,6 +74,7 @@ function foxselect( $atts ){
           $key = ( 'part_type' == $option )? 'product_type' : $option ;
           $configuredPartValue = $part_options_json->partOptions[$option][0];
           if( 'part_type' == $option ){
+            $value = $value['value'];
             $configuredPartValue = ['value' => $value, 'label' => $part_types_array[$value] ];
           }
           $configuredPart[$key] = $configuredPartValue;
@@ -75,8 +85,10 @@ function foxselect( $atts ){
     }
     $html = str_replace( '{configuredPart}', $configuredPartJs, $html );
 
-    if( $args['autoload'] )
-      wp_add_inline_script( 'foxselect-' . $foxselect_last_script, "window.FoxSelect.init( document.getElementById('rootfoxselect') );", 'after' );
+    if( $args['autoload'] ){
+      $script = ( isset( $_GET['partnum'] ) && ! empty( $_GET['partnum'] ) )? "loadPreConfiguredFoxSelect('" . urldecode( $_GET['partnum'] ) . "');" : "window.FoxSelect.init( document.getElementById('rootfoxselect') );";
+      wp_add_inline_script( 'foxselect-' . $foxselect_last_script, $script, 'after' );
+    }
 
     return $html;
   }
