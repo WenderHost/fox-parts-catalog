@@ -106,7 +106,6 @@ function product_list( $atts ){
   static $count = 0;
   static $lists = [];
   $count++;
-  //$ids[] = $count;
 
   $args = shortcode_atts( [
     'dataurl' => null,
@@ -127,7 +126,6 @@ function product_list( $atts ){
   wp_enqueue_script( 'productlist' );
   $upload_dir = wp_get_upload_dir();
   wp_localize_script( 'productlist', 'productListVars', [
-    /*'dataurl' => $args['dataurl'],*/
     'modalurl' => '#elementor-action%3Aaction%3Dpopup%3Aopen%20settings%3DeyJpZCI6IjMxMDQyIiwidG9nZ2xlIjpmYWxzZX0%3D',
     'imageurl' => $upload_dir['baseurl'],
     'lists' => $lists,
