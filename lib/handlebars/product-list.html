@@ -62,8 +62,8 @@ li.product .btn{
   {{#each this.products}}
     <li class="product">
 
-        <div class="productimage"><a class="foxselect" style="display: block;" href="{{../modalurl}}" data-partnumber="F{{product_family}}____-0.0/{{package_type}}/{{frequency_unit}}"><img src="{{image}}" style="width: 80px;" /></a></div>
-        <h2><a class="foxselect" href="{{../modalurl}}" data-partnumber="F{{product_family}}____-0.0/{{package_type}}/{{frequency_unit}}">{{product_family}}</a></h2>
+        <div class="productimage">{{#if landing_page}}<a href="{{landing_page}}" style="display: block">{{/if}}<img src="{{image}}" style="width: 80px;" />{{#if landing_page}}</a>{{/if}}</div>
+        <h2>{{#if landing_page}}<a href="{{landing_page}}">{{/if}}{{product_family}}{{#if landing_page}}</a>{{/if}}</h2>
         <p>
           {{size}}
           <br />{{frequency_range}}
