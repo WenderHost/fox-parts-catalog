@@ -96,6 +96,27 @@ function foxselect( $atts ){
 add_shortcode( 'foxselect', __NAMESPACE__ . '\\foxselect' );
 
 /**
+ * Displays part details for a FoxPart CPT.
+ *
+ * @param      array  $atts   The atts
+ */
+function part_details( $atts ){
+  $args = shortcode_atts([
+    'id' => null,
+  ], $atts );
+
+  if( is_null( $args['id'] ) || ! is_numeric( $args['id'] ) )
+    return '<p>ERROR: Missing `id` attribute. Please add a FoxPart ID to your shortcode.</p>';
+
+  $post = get_post( $args['id'] );
+  $partnum = $post->post_title;
+  $request = new \WP_REST_Request('GET','/foxparts/v1/get_options/' . $partnum . '-0.0/smd/mhz',true);
+  error_log('$request = ' . print_r($request, true ) );
+  return 'Request was called with `' . $partnum . '`.';
+}
+add_shortcode( 'partdetails', __NAMESPACE__ . '\\part_details' );
+
+/**
  * Displays a listing of FOX parts.
  *
  * @param      <type>  $atts   The atts
