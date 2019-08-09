@@ -42,7 +42,7 @@ function update_post_title( $post_id ){
       break;
 
     case 'oscillator':
-      $check_keys = ['size','package_option','voltage','stability','optemp'];
+      $check_keys = ['size','output','voltage','stability','optemp'];
       break;
 
     default:
@@ -65,7 +65,7 @@ function update_post_title( $post_id ){
       break;
 
     case 'oscillator':
-      $part_name = 'F' . array_search( $part_type, $part_types ) . $meta['size'][0] . $meta['package_option'][0] . $meta['voltage'][0] . $meta['stability'][0] . '_' . $meta['optemp'][0];
+      $part_name = 'F' . array_search( $part_type, $part_types ) . $meta['size'][0] . $meta['output'][0] . $meta['voltage'][0] . $meta['stability'][0] . '_' . $meta['optemp'][0];
       break;
 
     default:
