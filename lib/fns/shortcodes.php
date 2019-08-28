@@ -108,13 +108,94 @@ function part_details( $atts ){
   if( is_null( $args['id'] ) || ! is_numeric( $args['id'] ) )
     return '<p>ERROR: Missing `id` attribute. Please add a FoxPart ID to your shortcode.</p>';
 
-  $post = get_post( $args['id'] );
-  $partnum = $post->post_title;
-  $request = new \WP_REST_Request('GET','/foxparts/v1/get_options/' . $partnum . '-0.0/smd/mhz',true);
-  error_log('$request = ' . print_r($request, true ) );
-  return 'Request was called with `' . $partnum . '`.';
+  $details_table = \FoxParts\utilities\get_part_details_table( $args['id'] );
+
+  return $details_table;
 }
 add_shortcode( 'partdetails', __NAMESPACE__ . '\\part_details' );
+
+/**
+ * Returns the Part Num for a given FoxPart Post ID.
+ */
+function part_number( $atts ){
+  $args = shortcode_atts([
+    'id' => null,
+  ], $atts );
+
+  if( is_null( $args['id'] ) )
+    return '<p><code>Missing ID.</code></p>';
+
+  $part_number = get_the_title( $args['id'] );
+  if( $frequency = get_query_var( 'frequency' ) )
+    $part_number.= $frequency;
+
+  return $part_number;
+}
+add_shortcode( 'partnumber', __NAMESPACE__ . '\\part_number' );
+
+/**
+ * Gets the part data sheet.
+ */
+function part_datasheet( $atts ){
+  $args = shortcode_atts([
+    'id' => null,
+  ], $atts );
+
+  if( is_null( $args['id'] ) )
+    return '<p><code>Missing ID.</code></p>';
+
+  $frequency = get_query_var( 'frequency' );
+
+  $data_sheet = false;
+  $post = get_post( $args['id'] );
+  $partnum = $post->post_title;
+  if( $frequency ){
+    $data_sheet_url = \FoxParts\utilities\get_part_series_details( $partnum, $frequency, 'Data Sheet' );
+  } else {
+    $data_sheet_url = \FoxParts\utilities\get_product_family_details( $partnum, 'data_sheet_url' );
+  }
+  if( $data_sheet_url )
+    $data_sheet = '<a href="' . $data_sheet_url . '" target="_blank">Download Datasheet</a>';
+
+  return $data_sheet;
+}
+add_shortcode( 'part_datasheet', __NAMESPACE__ . '\\part_datasheet' );
+
+/**
+ * Gets the Part Photo.
+ */
+function part_photo( $atts ){
+  $args = shortcode_atts([
+    'id' => null,
+  ], $atts );
+
+  if( is_null( $args['id'] ) )
+    return '<p><code>Missing ID.</code></p>';
+
+  $part_photo = false;
+  if( ! has_post_thumbnail( $args['id'] ) ){
+    $post = get_post( $args['id'] );
+    $partnum = $post->post_title;
+    $product_photo_part_image = \FoxParts\utilities\get_product_family_details( $partnum, 'product_photo_part_image' );
+    if( ! empty( $product_photo_part_image ) ){
+      require_once( plugin_dir_path( __FILE__ ) . '../classes/download-remote-image.php' );
+
+      $download_remote_image = new \KM_Download_Remote_Image( $product_photo_part_image );
+      $attachment_id = $download_remote_image->download();
+
+      if( $attachment_id )
+        $meta_id = set_post_thumbnail( $args['id'], $attachment_id );
+
+      if( $meta_id )
+        $part_photo = get_the_post_thumbnail( $args['id'], 'large', ['style' => 'width: 260px;'] );
+    }
+  } else {
+    $part_photo = get_the_post_thumbnail( $args['id'], 'large', ['style' => 'width: 260px;'] );
+  }
+
+  return $part_photo;
+}
+add_shortcode( 'part_photo', __NAMESPACE__ . '\\part_photo' );
 
 /**
  * Displays a listing of FOX parts.

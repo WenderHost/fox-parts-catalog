@@ -12,7 +12,7 @@ add_action( 'typerocket_loaded', function(){
   $plural_name = 'Fox Parts';
   $foxparts = tr_post_type( $single_name, $plural_name );
   $foxparts->setIcon( 'cogs' );
-  $foxparts->setArgument( 'supports', ['title'] );
+  $foxparts->setArgument( 'supports', ['title','thumbnail'] );
 
   // Assign `Part Type` taxonomy to `foxpart`
   $part_type->apply($foxparts);

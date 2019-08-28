@@ -26,6 +26,7 @@ require ( 'lib/fns/enqueues.php' );
 require ( 'lib/fns/rest-api.php' );
 require ( 'lib/fns/save_post.php' );
 require ( 'lib/fns/shortcodes.php' );
+require ( 'lib/fns/query_vars.php' );
 require ( 'lib/fns/utilities.php' );
 
 // WP-CLI

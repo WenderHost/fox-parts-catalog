@@ -14,6 +14,11 @@ function init_rest_api(){
     'callback' => __NAMESPACE__ . '\\get_web_part'
   ]);
 
+  register_rest_route( 'foxparts/v1', 'get_product_family', [
+    'methods' => 'GET',
+    'callback' => __NAMESPACE__ . '\\get_product_family'
+  ]);
+
   $enable_cors = defined('JWT_AUTH_CORS_ENABLE') ? JWT_AUTH_CORS_ENABLE : false;
   if( $enable_cors )
     header('Access-Control-Allow-Origin: *');
@@ -176,9 +181,16 @@ function get_options( $data, $return = false ){
      * the meta field value as DECIMAL but the query seems to ignore
      * everything after the decimal. To fix, we set the type to CHAR
      * for numbers with a zero before the decimal.
+     *
+     * 08/12/2019 (09:58) - UPDATE: The above seems to apply even
+     * when we don't have a zero before the decimal as in the case
+     * of `FO7HSBEM` which has a from_frequency of `1.8` and a
+     * to_frequency of 50.004. When we cast those values as
+     * DECIMAL, we get nothing. Casting them as CHAR returns the
+     * correct result.
      */
-    $type = ( stristr( $frequency, '.') && 0 == substr( $frequency, 0, 1 ) )? 'CHAR' : 'DECIMAL' ;
-
+    $type = ( stristr( $frequency, '.') /* && 0 == substr( $frequency, 0, 1 ) */ )? 'CHAR' : 'DECIMAL' ;
+    //*
     $meta_query[] = [
       'relation' => 'AND',
       [
@@ -194,6 +206,7 @@ function get_options( $data, $return = false ){
         'type' => $type
       ]
     ];
+    /**/
   }
 
   // Package Option
@@ -268,16 +281,19 @@ function get_options( $data, $return = false ){
 
   //error_log( '$meta_query = ' . print_r( $meta_query, true ) . '; $tax_query = ' . print_r( $tax_query, true ) );
 
-  $query = new \WP_Query([
+  $query_args = [
     'post_type' => 'foxpart',
     'posts_per_page' => -1,
     'tax_query' => $tax_query,
     'meta_query' => $meta_query,
-  ]);
+  ];
+  $query = new \WP_Query( $query_args );
+  //error_log( basename(__FILE__) . ', LINE ' . __LINE__ . ': $meta_query = ' . print_r( $meta_query, true ) );
 
-  $response->message = ( ! $query->have_posts() )? '0 part options found (' . $data['part'] . ', ' . strlen( $configuredPart['number']['value'] ) . ' chars in part no).' : $query->post_count . ' part options found.';
+  $response->message = ( ! $query->have_posts() )? '0 part options found' : $query->post_count . ' part options found';
+  $response->message.= ' (' . $data['part'] . ', ' . strlen( $configuredPart['number']['value'] ) . ' chars in part no).';
   $response->availableParts = $query->post_count;
-  error_log( $response->message );
+  //error_log( basename( __FILE__ ) . ', LINE: ' . __LINE__ . ': ' . $response->message );
 
   foreach ($configuredPart as $key => $value) {
       $var = $key . '_options';
@@ -329,7 +345,62 @@ function get_part_type_slug( $part_type_code ){
 }
 
 /**
- * Gets part details for the Salesforce API.
+ * Returns product family details
+ *
+ * @param      \WP_REST_Request  $request  The request
+ */
+function get_product_family( \WP_REST_Request $request ){
+  if( is_wp_error( $request ) )
+    return $request;
+
+  if( ! isset( $_SESSION['SF_SESSION'] ) )
+    sf_login();
+
+  if( ! defined( 'FOXELECTRONICS_SF_API_ROUTE' ) )
+    return new \WP_Error( 'missingconst', __('Please make sure `FOXELECTRONICS_SF_API_ROUTE` is defined in your `wp-config.php`') );
+
+  $params = $request->get_params();
+  $family = $params['family'];
+  if( empty( $family ) )
+    return new \WP_Error( 'noproductfamily', __('No `product_family` provided.') );
+  $query['family'] = $family;
+
+  $access_token  = $_SESSION['SF_SESSION']->access_token;
+  if( empty( $access_token ) )
+    return new \WP_Error( 'noaccesstoken', __('No Access Token provided.') );
+
+  $instance_url  = $_SESSION['SF_SESSION']->instance_url;
+  if( empty( $instance_url ) )
+    return new \WP_Error( 'noinstanceurl', __('No Instance URL provided.') );
+
+  $transient_key = 'fox_product_family_' . $family;
+
+  if( false === ( $response = get_transient( $transient_key ) ) ){
+    $request_url = trailingslashit( $instance_url ) . FOXELECTRONICS_SF_API_ROUTE . 'ProductFamily' . '?' . http_build_query( $query );
+
+    $response = wp_remote_get( $request_url, [
+      'method' => 'GET',
+      'timeout' => 30,
+      'redirection' => 5,
+      'headers' => [
+        'Authorization' => 'Bearer ' . $access_token,
+      ],
+    ]);
+
+    if( ! is_wp_error( $response ) ){
+      $data = json_decode( wp_remote_retrieve_body( $response ) );
+      $response = new \stdClass();
+      $response->data = $data;
+    }
+
+    set_transient( $transient_key , $response, HOUR_IN_SECONDS * 24 );
+  }
+
+  return $response;
+}
+
+/**
+ * Gets part details from the Salesforce API.
  *
  * @param      \WP_REST_Request    $request  The request
  *
