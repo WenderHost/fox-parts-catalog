@@ -5,12 +5,52 @@ namespace FoxParts\utilities;
 /**
  * Available functions:
  *
+ * get_part_attributes()
  * get_part_details_table()
  * get_product_family_details()
  * get_product_family_from_partnum()
  * get_key_label()
+ * map_part_attribute()
  *
  */
+
+/**
+ * Returns array of part attributes for a specified Fox part_type
+ *
+ * @param      <type>         $part_type  The part type
+ *
+ * @return     array|boolean  The part attributes.
+ */
+function get_part_attributes( $part_type = null ){
+  if( is_null( $part_type ) )
+    return false;
+
+  $part_type_codes = [
+    'crystal'     => 'C',
+    'crystal-khz' => 'K',
+    'oscillator'  => 'O',
+    'tcxo'        => 'T',
+    'vcxo'        => 'Y',
+    'sso'         => 'S',
+  ];
+
+  if( 1 < strlen( $part_type ) )
+    $part_type_code = $part_type_codes[$part_type];
+
+  $part_type_attributes = [
+    'C' => ['part_type', 'size', 'package_option', 'tolerance', 'stability', 'load', 'optemp'],
+    'K' => ['part_type', 'size', 'tolerance', 'stability', 'load', 'optemp'],
+    'O' => ['part_type', 'size', 'output', 'voltage', 'stability', 'optemp'],
+    'T' => ['part_type', 'size', 'output', 'pin_1', 'voltage', 'stability', 'optemp'],
+    'Y' => ['part_type', 'size', 'output', 'voltage', 'stability', 'optemp'],
+    'S' => ['part_type', 'size', 'enable_type', 'voltage', 'spread', 'optemp'],
+  ];
+
+  if( ! array_key_exists( $part_type_code, $part_type_attributes ) )
+    return false;
+
+  return $part_type_attributes[$part_type_code];
+}
 
  /**
   * Returns HTML table of Part details.
@@ -30,8 +70,6 @@ function get_part_details_table( $post_id ){
 
   //error_log('$data = ' . print_r($data, true) );
   $response = \FoxParts\restapi\get_options( $data, true );
-
-
 
   if( isset( $response->configuredPart ) && 0 < $response->availableParts ){
     $configuredPart = $response->configuredPart;
@@ -205,6 +243,13 @@ function get_part_series_details( $partnum = null, $frequency = null, $detail = 
 
 }
 
+/**
+ * Provided a Fox Part number returns the product family
+ *
+ * @param      string   $partnum  The partnum
+ *
+ * @return     string  The product family from partnum.
+ */
 function get_product_family_from_partnum( $partnum = '' ){
   if( empty( $partnum ) )
     return false;
@@ -247,4 +292,112 @@ function get_key_label( $key ){
       $label = ( stristr( $key, 'mm' ) )? \ucfirst( str_replace( 'mm', '(mm)', $key ) ) : \ucwords($key);
   }
   return $label;
+}
+
+/**
+ * Maps Fox Part attribute values to human readable labels
+ *
+ * @param      array  $atts {
+ *  @type string $part_type     The part type code
+ *  @type string $package_type  The part's package type
+ *  @type string $attribute     The attribute we are mapping
+ *  @type string $value         The value we are mapping
+ *  @type string $size          The part's size
+ * }
+ *
+ * @return     string  Human readable label for the given value
+ */
+function map_part_attribute( $atts = [] ){
+
+  $args = shortcode_atts( [
+    'part_type'     => null,
+    'package_type'  => null,
+    'attribute'     => null,
+    'value'         => null,
+    'size'          => null,
+  ], $atts );
+  //echo '<pre>$args = '.print_r($args,true).'</pre>';
+  $lc_attribute = strtolower( $args['attribute'] );
+
+  switch( $lc_attribute ){
+    case 'optemp':
+      $labels = [ 'B' => '-10 To +50 C', 'D' => '-10 To +60 C', 'E' => '-10 To +70 C', 'Q' => '-20 To +60 C', 'F' => '-20 To +70 C', 'Z' => '-20 To +75 C', 'N' => '-20 To +85 C', 'G' => '-30 To +70 C', 'H' => '-30 To +75 C', 'J' => '-30 To +80 C', 'K' => '-30 To +85 C', 'L' => '-35 To +80 C', 'V' => '-35 To +85 C', 'P' => '-40 To +105 C', 'I' => '-40 To +125 C', 'Y' => '-40 To +75 C', 'M' => '-40 To +85 C', 'R' => '-55 To +100 C', 'S' => '-55 To +105 C', 'T' => '-55 To +125 C', 'U' => '-55 To +85 C', 'A' => '0 To +50 C', 'C' => '0 To +70 C', 'W' => 'Other' ];
+      break;
+
+    case 'output':
+      $labels = [ 'A'  => 'Clipped Sine', 'C'  => 'Clipped Sine', 'G'  => 'Clipped Sine', 'H'  => 'HCMOS', 'S'  => 'HCMOS', 'HB' => 'HCMOS', 'HD' => 'HCMOS', 'HH' => 'HCMOS', 'HL' => 'HCMOS', 'HS' => 'HCMOS', 'HK' => 'HCMOS', 'PD' => 'LVPECL', 'PS' => 'LVPECL', 'PU' => 'LVPECL', 'LD' => 'LVDS', 'LS' => 'LVDS', 'SL' => 'HCSL', 'HA' => 'AEC-Q200' ];
+      break;
+
+    case 'package_option':
+      $labels = ['AS' => 'SMD', 'AQ' => 'SMD', 'BA' => 'SMD', 'BS' => 'SMD', 'ST' => 'Pin-Thru', 'UT' => 'Pin-Thru', '0T' => 'Pin-Thru', '15' => 'Pin-Thru', '26' => 'Pin-Thru', '38' => 'Pin-Thru'];
+      break;
+
+    case 'pin_1':
+      $labels = [ 'N' => 'Ground', 'V' => 'Voltage Control', 'D' => 'E/D', 'T' => 'VC w/o mech. trimmer' ];
+      if( ! is_null( $args['size'] ) && 9 == $args['size'] )
+        $labels['N'] = 'No Connect';
+      break;
+
+    case 'size':
+      $pin_thru_crystals = ['ST','UT','0T','15','26','38'];
+
+      switch( strtolower( $args['part_type'] ) ){
+        case 'c':
+        case 'crystal':
+        case 'o':
+        case 'oscillator':
+          if( in_array( $args['package_type'], $pin_thru_crystals ) ){
+            $args['value'] = $args['value'] .  $args['package_type'];
+            $labels = [ '4ST' => 'HC49 3.6mm height', '9ST' => 'HC49 2.5mm height', '4UT' => 'HC49U 13.46mm height', '80T' => 'HC80U', 'T15' => '5.0x1.5 mm', 'T26' => '6.0x2.0 mm', 'T38' => '8.0x3.0 mm' ];
+          } else {
+            $labels = ['A' => '1.2x1.0 mm', '0' => '1.6x1.2 mm', '1' => '2.0x1.6 mm', '2' => '2.5x2.0 mm', '3' => '3.2x2.5 mm', '4' => 'HC49 SMD (4.5mm)', '5' => '5.0x3.2 mm', '6' => '6.0x3.5 mm', '7' => '7.0x5.0 mm', '8' => '10.0x4.5 mm', '9' => 'HC49 SMD (3.2mm)'];
+          }
+
+          if( 'oscillator' == $args['part_type'] || 'O' == $args['part_type'] )
+            $labels['8'] = '1.6x1.2 mm';
+          break;
+
+        case 'k':
+        case 'crystal-khz':
+          $labels = [ '161' => '1.6x1.0 mm', '122' => '2.0x1.2 mm', '12A' => '2.0x1.2 mm',  '13A' => '3.2x1.5 mm',  '135' => '3.2x1.5 mm',  '13L' => '3.2x1.5 mm',  '145' => '4.1x1.5 mm', '255' => '4.9x1.8 mm', 'FSX' => '7.0x1.5 mm', 'FSR' => '8.7x3.7 mm', 'FSM' => '10.4x4.0 mm', 'T15' => '5.0x1.5 mm', 'T26' => '6.0x2.0 mm', 'T38' => '8.0x3.0 mm' ];
+          break;
+
+        case 't':
+        case 'tcxo':
+          $labels = [ '1' => '2.0x1.6 mm', '2' => '2.5x2.0 mm', '3' => '3.2x2.5 mm', '5' => '5.0x3.2 mm', '7' => '7.0x5.0 mm', '9' => '11.4x9.6 mm' ];
+          break;
+
+        default:
+          $labels[$args['value']] = $args['value']; // Just return the value
+          break;
+      }
+      break;
+    /* END `size` */
+
+    case 'spread':
+      $labels = [ 'A' => '±0.25% Center', 'B' => '±0.5% Center', 'C' => '±0.75% Center', 'D' => '±1.0% Center', 'E' => '±1.5% Center', 'F' => '±2.0% Center', 'G' => '-0.5% Down Spread', 'H' => '-1.0% Down Spread', 'J' => '-1.5% Down Spread', 'K' => '-2.0% Down Spread', 'L' => '-3.0% Down Spread', 'M' => '-4.0% Down Spread', 'N' => '±0.125% Center', 'P' => '-0.25% Down Spread' ];
+      break;
+
+    case 'stability':
+      $labels = [ 'M' => '-0.036 ppm / (∆ºC)²', 'I' => '-0.04 ppm (∆ºC)² max', 'O' => '-140 ~ +10 ppm', 'K' => '0.28 ppm', 'Q' => '0.37 ppm', 'U' => '0.5 ppm', 'T' => '1.0 ppm', 'S' => '1.5 ppm', 'H' => '10.0 ppm', 'G' => '100 ppb', 'A' => '100.0 ppm', 'Y' => '1000.0 ppm', 'F' => '15.0 ppm', 'R' => '2.0 ppm', 'P' => '2.5 ppm', 'E' => '20.0 ppm', 'V' => '200.0 ppm', 'D' => '25.0 ppm', 'N' => '3.0 ppm', 'C' => '30.0 ppm', 'L' => '5.0 ppm', 'B' => '50.0 ppm', 'W' => '70.0 ppm', 'J' => '8 ppm', 'Z' => 'Other', 'X' => 'Overall' ];
+      break;
+
+    case 'tolerance':
+      $labels = ['M' => '-0.036 ±1 ppm / (∆ºC)²', 'I' => '-0.04 ppm (∆ºC)² max', 'O' => '-140 ~ +10 ppm', 'K' => '0.28 ppm', 'Q' => '0.37 ppm', 'U' => '0.5 ppm', 'T' => '1.0 ppm', 'S' => '1.5 ppm', 'H' => '10.0 ppm', 'G' => '100 ppb', 'A' => '100.0 ppm', 'Y' => '1000.0 ppm', 'F' => '15.0 ppm', 'R' => '2.0 ppm', 'P' => '2.5 ppm', 'E' => '20.0 ppm', 'V' => '200.0 ppm', 'D' => '25.0 ppm', 'N' => '3.0 ppm', 'C' => '30.0 ppm', 'L' => '5.0 ppm', 'B' => '50.0 ppm', 'W' => '70.0 ppm', 'J' => '8 ppm', 'Z' => 'Other', 'X' => 'Overall' ];
+      break;
+
+    case 'voltage':
+      $labels = [ 'A' => '5 Volts', 'P' => '5 Volts', 'B' => '3.3 Volts', 'C' => '3.3 Volts', 'D' => '3 Volts', 'E' => '3 Volts', 'F' => '2.85 Volts', 'G' => '2.85 Volts', 'Q' => '2.8 Volts', 'R' => '2.8 Volts', 'S' => '2.7 Volts', 'T' => '2.7 Volts', 'H' => '2.5 Volts', 'J' => '2.5 Volts', 'K' => '1.8 Volts', 'L' => '1.8 Volts', 'M' => '1.0 Volt', 'N' => '1.0 Volt', 'V' => '1.7~3.63V', 'W' => '2.25~3.63V' ];
+      break;
+
+    default:
+      $labels[$args['value']] = $args['value'];
+      break;
+  }
+
+  if( array_key_exists( $args['value'], $labels ) ){
+    return $labels[ $args['value'] ];
+  } else {
+    return $args['value'];
+  }
 }
