@@ -198,7 +198,117 @@ function part_photo( $atts ){
 add_shortcode( 'part_photo', __NAMESPACE__ . '\\part_photo' );
 
 /**
- * Displays a listing of FOX parts.
+ * Displays the Part Search results table
+ *
+ * @param      array  $atts {
+ *  @type string $s The search string
+ * }
+ *
+ * @return     string  An html Part Search results table
+ */
+function partsearchresults( $atts ){
+  $args = shortcode_atts( [
+    's' => null
+  ], $atts );
+
+  // Filter the search query to left align the search string
+  add_filter( 'posts_where', function( $where, $query ){
+    global $wpdb;
+
+    $s = $query->get('s');
+    $where.= " AND $wpdb->posts.post_title LIKE '$s%'";
+
+    return $where;
+  }, 10 , 2 );
+
+  // Query `foxpart` CPTs according to our search string:
+  $query_args = [
+    's'               => $args['s'],
+    'post_type'       => 'foxpart',
+    'orderby'         => 'title',
+    'order'           => 'ASC',
+    'posts_per_page'  => -1,
+
+  ];
+  $query = new \WP_Query( $query_args );
+
+  if( $query->have_posts() ){
+    $x = 0;
+    $rows = [];
+    while( $query->have_posts() ): $query->the_post();
+      $post_id = get_the_ID();
+      $post_title = get_the_title();
+      $rows[$x]['name'] = '<a href="' . get_permalink( $post_id ) . '">' . $post_title . '</a>';
+
+      $part_types = wp_get_post_terms( $post_id, 'part_type' );
+      $part_type = $part_types[0]->name;
+      $package_type = ( 'crystal' == $part_type || 'crystal-khz' == $part_type )? get_post_meta( $post_id, 'package_option', true ) : null ;
+      $size = get_post_meta( $post_id, 'size', true );
+
+      $attributes = \FoxParts\utilities\get_part_attributes( $part_type );
+
+      // Configure the header row by:
+      // - Removing rows we don't want to display (i.e. `part_type` and `load`)
+      // - Formatting the text (e.g. capitalizing first letter of the header's name)
+      if( 0 === $x ){
+        $part_type_key = array_search( 'part_type', $attributes );
+        $load_key = array_search( 'load', $attributes );
+        unset( $attributes[$part_type_key], $attributes[$load_key] );
+
+        $header_attributes = array_map('ucfirst', $attributes );
+        $headers = array_merge( ['Part Number'], $header_attributes );
+      }
+
+      foreach( $attributes as $key => $attr ){
+        // Don't display `part_type` and `load` columns
+        if( 'part_type' == $attr || 'load' == $attr ){
+          unset($attributes[$key]);
+          continue;
+        }
+
+        $value = get_post_meta( $post_id, $attr, true );
+        $mapped_value = \FoxParts\utilities\map_part_attribute([
+          'part_type'     => $part_type,
+          'package_type'  => $package_type,
+          'attribute'     => $attr,
+          'value'         => $value,
+          'size'          => $size,
+        ]);
+        $rows[$x][$attr] = $mapped_value;
+      }
+      $x++;
+    endwhile;
+
+    foreach( $rows as $row ){
+      $tbody[] = '<tr><td>' . implode( '</td><td>', $row ) . '</td></tr>';
+    }
+
+    wp_enqueue_script( 'datatables-init' );
+    wp_enqueue_style( 'datatables-custom' );
+
+    return '<table id="partsearchresults"><thead><tr><th>' . implode( '</th><th>', $headers ) . '</th></tr></thead><tbody>' . implode( '', $tbody ) . '</tbody></table>';
+  }
+}
+add_shortcode( 'partsearchresults', __NAMESPACE__ . '\\partsearchresults' );
+
+/**
+ * Displays the details for a Part Series
+ *
+ * @param      <type>  $atts   The atts
+ *
+ * @return     string  ( description_of_the_return_value )
+ */
+function part_series_results( $atts ){
+  $args = shortcode_atts( [
+    'foo' => 'bar'
+  ], $atts );
+
+  return '<div style="padding: 10px; background-color: #eee; border: 1px solid #e6e7e8;"><code>Part Series details will go here...</code></div>';
+}
+add_shortcode( 'partseriesresults', __NAMESPACE__ . '\\part_series_results' );
+
+/**
+ * For Product Family pages, displays a listing of FOX parts.
  *
  * @param      <type>  $atts   The atts
  *

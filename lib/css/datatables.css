@@ -1,0 +1,12 @@
+table.dataTable thead th,
+table.dataTable tbody td{
+  padding: 4px 8px;
+}
+table.dataTable thead th select{
+  margin-top: 10px;
+}
+table.dataTable thead th.sorting,
+table.dataTable thead th.sorting_asc,
+table.dataTable thead th.sorting_desc{
+  background-position-y: 15%
+}
