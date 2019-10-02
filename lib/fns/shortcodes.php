@@ -211,13 +211,21 @@ function partsearchresults( $atts ){
     's' => null
   ], $atts );
 
+  $original_search_string = $args['s'];
+  $args['s'] = \FoxParts\utilities\standardize_search_string( $args['s'] );
+  if( ! $args['s'] ){
+    $part_types = [];
+    foreach( FOXPC_PART_TYPES as $part_code => $part_name ){
+      $part_types[] = $part_code . ' (' . $part_name . ')';
+    }
+    return '<div class="elementor-alert elementor-alert-warning"><span class="elementor-alert-title">No results for `<code>' . $original_search_string . '</code>`</span><span class="elementor-alert-description">No results returned. Please ensure your part search string begins with one of the following characters:<ul><li>' . implode( '</li><li>', $part_types ) . '</li></ul></span></div>';
+  }
+
   // Filter the search query to left align the search string
   add_filter( 'posts_where', function( $where, $query ){
     global $wpdb;
-
     $s = $query->get('s');
     $where.= " AND $wpdb->posts.post_title LIKE '$s%'";
-
     return $where;
   }, 10 , 2 );
 
@@ -287,6 +295,8 @@ function partsearchresults( $atts ){
     wp_enqueue_style( 'datatables-custom' );
 
     return '<table id="partsearchresults"><thead><tr><th>' . implode( '</th><th>', $headers ) . '</th></tr></thead><tbody>' . implode( '', $tbody ) . '</tbody></table>';
+  } else {
+    return '<div class="elementor-alert elementor-alert-info"><span class="elementor-alert-title">No Results for `<code>' . $original_search_string . '</code>`</span><span class="elementor-alert-description">Please try searching again.</span></div>';
   }
 }
 add_shortcode( 'partsearchresults', __NAMESPACE__ . '\\partsearchresults' );
@@ -300,10 +310,13 @@ add_shortcode( 'partsearchresults', __NAMESPACE__ . '\\partsearchresults' );
  */
 function part_series_results( $atts ){
   $args = shortcode_atts( [
-    'foo' => 'bar'
+    's' => null
   ], $atts );
 
-  return '<div style="padding: 10px; background-color: #eee; border: 1px solid #e6e7e8;"><code>Part Series details will go here...</code></div>';
+  wp_enqueue_script( 'datatables-init' );
+  wp_enqueue_style( 'datatables-custom' );
+  wp_localize_script( 'datatables-init', 'wpvars', ['partSeriesSearchUrl' => get_site_url( '', '/wp-json/foxparts/v1/get_part_series?partnum=' . $args['s'] ) ] );
+  return '<table id="partseries"><thead><tr><th></th><th>Part Series</th><th>Part Type</th><th>Package</th><th>Datasheet</th></tr></thead><tbody></tbody></table>';
 }
 add_shortcode( 'partseriesresults', __NAMESPACE__ . '\\part_series_results' );
 

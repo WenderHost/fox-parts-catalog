@@ -14,9 +14,9 @@ function init_rest_api(){
     'callback' => __NAMESPACE__ . '\\get_web_part'
   ]);
 
-  register_rest_route( 'foxparts/v1', 'get_product_family', [
+  register_rest_route( 'foxparts/v1', 'get_part_series', [
     'methods' => 'GET',
-    'callback' => __NAMESPACE__ . '\\get_product_family'
+    'callback' => __NAMESPACE__ . '\\get_part_series'
   ]);
 
   $enable_cors = defined('JWT_AUTH_CORS_ENABLE') ? JWT_AUTH_CORS_ENABLE : false;
@@ -345,11 +345,12 @@ function get_part_type_slug( $part_type_code ){
 }
 
 /**
- * Returns product family details
+ * Returns part series given a part number
  *
  * @param      \WP_REST_Request  $request  The request
  */
-function get_product_family( \WP_REST_Request $request ){
+//function get_product_family( \WP_REST_Request $request ){
+function get_part_series( \WP_REST_Request $request ){
   if( is_wp_error( $request ) )
     return $request;
 
@@ -360,10 +361,16 @@ function get_product_family( \WP_REST_Request $request ){
     return new \WP_Error( 'missingconst', __('Please make sure `FOXELECTRONICS_SF_API_ROUTE` is defined in your `wp-config.php`') );
 
   $params = $request->get_params();
-  $family = $params['family'];
-  if( empty( $family ) )
-    return new \WP_Error( 'noproductfamily', __('No `product_family` provided.') );
-  $query['family'] = $family;
+  $part_series = $params['partnum'];
+  if( empty( $part_series ) )
+    return new \WP_Error( 'noproductfamily', __('No `partnum` provided.') );
+
+  // Standardize our search string
+  $part_series = \FoxParts\utilities\standardize_search_string( $part_series, false );
+  if( ! $part_series )
+    return new \WP_Error( 'invalidsearchstring', __('Your search string was invalid.') );
+
+  $query['family'] = $part_series; // Our SF API uses `family` as the query param
 
   $access_token  = $_SESSION['SF_SESSION']->access_token;
   if( empty( $access_token ) )
@@ -373,11 +380,10 @@ function get_product_family( \WP_REST_Request $request ){
   if( empty( $instance_url ) )
     return new \WP_Error( 'noinstanceurl', __('No Instance URL provided.') );
 
-  $transient_key = 'fox_product_family_' . $family;
+  $transient_key = 'fox_part_series_' . $part_series;
 
   if( false === ( $response = get_transient( $transient_key ) ) ){
     $request_url = trailingslashit( $instance_url ) . FOXELECTRONICS_SF_API_ROUTE . 'ProductFamily' . '?' . http_build_query( $query );
-
     $response = wp_remote_get( $request_url, [
       'method' => 'GET',
       'timeout' => 30,
@@ -390,7 +396,7 @@ function get_product_family( \WP_REST_Request $request ){
     if( ! is_wp_error( $response ) ){
       $data = json_decode( wp_remote_retrieve_body( $response ) );
       $response = new \stdClass();
-      $response->data = $data;
+      $response->data = $data->part_series;
     }
 
     set_transient( $transient_key , $response, HOUR_IN_SECONDS * 24 );

@@ -190,22 +190,28 @@ function get_product_family_details( $partnum = null, $detail = null ){
     return $product_family_details;
 
   $product_family = get_product_family_from_partnum( $partnum );
-  $sf_api_request_url = get_site_url( null, 'wp-json/foxparts/v1/get_product_family?family=' . $product_family );
+  $sf_api_request_url = get_site_url( null, 'wp-json/foxparts/v1/get_part_series?partnum=' . $product_family );
+  error_log('$sf_api_request_url = ' . $sf_api_request_url );
   $sfRequest = \WP_REST_Request::from_url( $sf_api_request_url );
-  $sfResponse = \FoxParts\restapi\get_product_family( $sfRequest );
+  $sfResponse = \FoxParts\restapi\get_part_series( $sfRequest );
 
-  if( $sfResponse->data && 0 < count($sfResponse->data) ){
+  // 10/02/2019 (05:32) - Need to rewrite below to work with $sfResponse->data->part_series
+  // Currently we're just checking $sfResponse->data.
+  if( $sfResponse->data && 0 < count($sfResponse->data->part_series) ){
     // Match to correct product series within the product family:
-    foreach( $sfResponse->data as $product_series ){
-      if( ! is_null( $product_series->products ) && is_array( $product_series->products ) && 0 < count( $product_series->products ) ){
-        if( stristr( $product_series->products[0], $partnum ) ){
-          //$salesForcePartDetails = $product_series;
-          foreach ($product_series as $key => $value) {
+    foreach( $sfResponse->data->part_series as $part_series ){
+
+      /*
+      if( ! is_null( $part_series->products ) && is_array( $part_series->products ) && 0 < count( $part_series->products ) ){
+        if( stristr( $part_series->products[0], $partnum ) ){
+          //$salesForcePartDetails = $part_series;
+          foreach ($part_series as $key => $value) {
             $product_family_details[$key] = $value;
           }
           break;
         }
       }
+      /**/
     }
   }
 
@@ -215,6 +221,22 @@ function get_product_family_details( $partnum = null, $detail = null ){
     return false;
   } else {
     return $product_family_details;
+  }
+}
+
+function get_part_series( $partnum = null ){
+  if( is_null( $partnum ) )
+    return false;
+
+  $sf_api_request_url = get_site_url( null, 'wp-json/foxparts/v1/get_part_series?partnum=' . $partnum );
+  //error_log('$sf_api_request_url = ' . $sf_api_request_url );
+  $sfRequest = \WP_REST_Request::from_url( $sf_api_request_url );
+  $sfResponse = \FoxParts\restapi\get_part_series( $sfRequest );
+
+  if( $sfResponse->data && 0 < count( $sfResponse->data->part_series ) ){
+    return $sfResponse->data->part_series;
+  } else {
+    return false;
   }
 }
 
@@ -400,4 +422,38 @@ function map_part_attribute( $atts = [] ){
   } else {
     return $args['value'];
   }
+}
+
+/**
+ * Standardizes a Fox Part search string.
+ *
+ * Standardized string has the following properties when $for_wp is `true`:
+ * - Begins with the letter `f`.
+ * - All letters are lowercase.
+ * - Second letter in the string will be one of the array keys in FOXPC_PART_TYPES.
+ *
+ * When $for_wp == `false`, the string begins with a Fox Part Type code.
+ *
+ * @param      string   $s      Fox Part search string
+ * @param      boolean  $for_wp Standardize string for a WordPress search where all `foxpart` CPTs start with `F`?
+ *
+ * @return     boolean|string  Returns our standardized part search string.
+ */
+function standardize_search_string( $s = null, $for_wp = true ){
+  if( is_null( $s ) )
+    return false;
+
+  $s_array = array_map( 'strtolower', str_split( $s ) );
+
+  if( 'f' != $s_array[0] && true == $for_wp ){
+    array_unshift( $s_array, 'f' );
+  } else if ( 'f' == $s_array[0] && false == $for_wp ){
+    array_shift( $s_array );
+  }
+
+  $part_type_check_key = ( $for_wp )? 1 : 0 ;
+  if( ! array_key_exists( strtoupper( $s_array[$part_type_check_key] ), FOXPC_PART_TYPES ) )
+    return false;
+
+  return implode( '', $s_array );
 }
