@@ -13,7 +13,7 @@ table.dataTable thead th.sorting_desc{
 
 /* Child rows*/
 table.dataTable td.child-row{
-  padding: 8px 8px 40px 46px;
+  padding: 8px 8px 40px 62px;
   background-color: #e8f1f6;
 }
 table.dataTable td.child-row table{

@@ -200,8 +200,7 @@ function get_product_family_details( $partnum = null, $detail = null ){
   if( $sfResponse->data && 0 < count($sfResponse->data->part_series) ){
     // Match to correct product series within the product family:
     foreach( $sfResponse->data->part_series as $part_series ){
-
-      /*
+      //*
       if( ! is_null( $part_series->products ) && is_array( $part_series->products ) && 0 < count( $part_series->products ) ){
         if( stristr( $part_series->products[0], $partnum ) ){
           //$salesForcePartDetails = $part_series;
@@ -224,12 +223,13 @@ function get_product_family_details( $partnum = null, $detail = null ){
   }
 }
 
+/*
+// 10/04/2019 (09:56) - commented this out to see if it's being used anywhere, doesn't appear to be:
 function get_part_series( $partnum = null ){
   if( is_null( $partnum ) )
     return false;
 
   $sf_api_request_url = get_site_url( null, 'wp-json/foxparts/v1/get_part_series?partnum=' . $partnum );
-  //error_log('$sf_api_request_url = ' . $sf_api_request_url );
   $sfRequest = \WP_REST_Request::from_url( $sf_api_request_url );
   $sfResponse = \FoxParts\restapi\get_part_series( $sfRequest );
 
@@ -239,6 +239,7 @@ function get_part_series( $partnum = null ){
     return false;
   }
 }
+/**/
 
 function get_part_series_details( $partnum = null, $frequency = null, $detail = null ){
   $sf_api_request_url = get_site_url( null, 'wp-json/foxparts/v1/get_web_part?partnum=' . $partnum . $frequency );

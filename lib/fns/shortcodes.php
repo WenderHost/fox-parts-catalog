@@ -316,7 +316,7 @@ function part_series_results( $atts ){
   wp_enqueue_script( 'datatables-init' );
   wp_enqueue_style( 'datatables-custom' );
   wp_localize_script( 'datatables-init', 'wpvars', ['partSeriesSearchUrl' => get_site_url( '', '/wp-json/foxparts/v1/get_part_series?partnum=' . $args['s'] ) ] );
-  return '<table id="partseries"><thead><tr><th></th><th>Part Series</th><th>Part Type</th><th>Package</th><th>Datasheet</th></tr></thead><tbody></tbody></table>';
+  return '<table id="partseries"><thead><tr><th style="width: 40px;"></th><th style="width: 10%;">Part Series</th><th style="width: 10%;">Part Type</th><th style="width: 55%;">Details</th><th style="width: 20%;">Datasheet</th></tr></thead><tbody></tbody></table>';
 }
 add_shortcode( 'partseriesresults', __NAMESPACE__ . '\\part_series_results' );
 
