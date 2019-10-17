@@ -6,6 +6,16 @@ namespace FoxParts\enqueues;
  * Adds scripts/styles for FOXSelect.
  */
 function add_enqueues(){
+  // CSS
+  $site_url = get_site_url();
+  $dev_servers = ['https://foxonline.local','https://localhost:3000'];
+  if( in_array( $site_url, $dev_servers ) ){
+    wp_enqueue_style( 'foxparts-styles', plugin_dir_url( __FILE__ ) . '../css/main.css', null, plugin_dir_path( __FILE__ ) . '../css/main.css' );
+  } else {
+    wp_enqueue_style( 'foxparts-styles', plugin_dir_url( __FILE__ ) . '../dist/main.css', null, plugin_dir_path( __FILE__ ) . '../dist/main.css' );
+  }
+
+  // FoxSelect Loader Script
   wp_enqueue_script( 'foxselect-loader', plugin_dir_url( __FILE__ ) . '../js/foxselect-loader.js', ['jquery'], filemtime( plugin_dir_path( __FILE__ ) . '../js/foxselect-loader.js' ), true );
   wp_localize_script( 'foxselect-loader', 'fsloaderVars', ['resturl' => get_rest_url( null, 'foxparts/v1/get_options/' ), 'ieurl' => '/foxselect-ie'] );
 
