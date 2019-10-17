@@ -6,14 +6,6 @@ namespace FoxParts\enqueues;
  * Adds scripts/styles for FOXSelect.
  */
 function add_enqueues(){
-  // CSS
-  $site_url = get_site_url();
-  $dev_servers = ['https://foxonline.local','https://localhost:3000'];
-  if( in_array( $site_url, $dev_servers ) ){
-    wp_enqueue_style( 'foxparts-styles', plugin_dir_url( __FILE__ ) . '../css/main.css', null, plugin_dir_path( __FILE__ ) . '../css/main.css' );
-  } else {
-    wp_enqueue_style( 'foxparts-styles', plugin_dir_url( __FILE__ ) . '../dist/main.css', null, plugin_dir_path( __FILE__ ) . '../dist/main.css' );
-  }
 
   // FoxSelect Loader Script
   wp_enqueue_script( 'foxselect-loader', plugin_dir_url( __FILE__ ) . '../js/foxselect-loader.js', ['jquery'], filemtime( plugin_dir_path( __FILE__ ) . '../js/foxselect-loader.js' ), true );
@@ -46,8 +38,15 @@ function add_enqueues(){
   // Register DataTables.js
   wp_register_script( 'datatables', '//cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js', ['jquery'], '1.10.19', true );
   wp_register_script( 'datatables-init', plugin_dir_url( __FILE__ ) . '../js/datatables-init.js', ['datatables'], filemtime( plugin_dir_path( __FILE__ ) . '../js/datatables-init.js' ), true );
-  wp_register_style( 'datatables', '//cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css', null, '1.10.19' );
-  wp_register_style( 'datatables-custom', plugin_dir_url( __FILE__ ) . '../css/datatables.css', ['datatables'], filemtime( plugin_dir_path( __FILE__ ) . '../css/datatables.css' ) );
+
+  // CSS
+  $site_url = get_site_url();
+  $dev_servers = ['https://foxonline.local','https://localhost:3000'];
+  if( in_array( $site_url, $dev_servers ) ){
+    wp_enqueue_style( 'foxparts-styles', plugin_dir_url( __FILE__ ) . '../css/main.css', null, plugin_dir_path( __FILE__ ) . '../css/main.css' );
+  } else {
+    wp_enqueue_style( 'foxparts-styles', plugin_dir_url( __FILE__ ) . '../dist/main.css', null, plugin_dir_path( __FILE__ ) . '../dist/main.css' );
+  }
 }
 \add_action( 'wp_enqueue_scripts', __NAMESPACE__ . '\\add_enqueues' );
 
