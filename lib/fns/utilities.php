@@ -52,6 +52,38 @@ function get_part_attributes( $part_type = null ){
   return $part_type_attributes[$part_type_code];
 }
 
+/**
+ * Given a Fox Part number, returns the part's package_type
+ *
+ * @param      string          $partnum  The partnum
+ *
+ * @return     boolean|string  The package type from partnum.
+ */
+function get_package_type_from_partnum( $partnum = null ){
+  if( empty( $partnum ) || is_null( $partnum ) )
+    return false;
+
+  // Remove initial `F`
+  if( 'F' == substr( $partnum, 0, 1 ) )
+    $trimmed_partnum = ltrim( $partnum, 'F' );
+
+  $product_type = substr( $trimmed_partnum, 0, 1 );
+
+  // Only Crystals and KHz-Crystals have `pin-thru` package_type options, all others are `smd`:
+  $pin_thru_product_types = ['C','K'];
+  if( ! in_array( $product_type, $pin_thru_product_types ) )
+    return 'smd';
+
+  // If product type is a Khz Crystal (i.e. `K`), package option length is 3, otherwise it's 2.
+  $length = ( 'K' == $product_type )? 3 : 2;
+  $package_option = substr( $trimmed_partnum, 2, $length );
+  $package_type = map_part_attribute([
+    'attribute'   => 'package_option',
+    'value'       => $package_option,
+  ]);
+  return $package_type;
+};
+
  /**
   * Returns HTML table of Part details.
   */
@@ -61,14 +93,18 @@ function get_part_details_table( $post_id ){
   $partnum = $post->post_title;
   $from_frequency = get_post_meta( $post_id, 'from_frequency', true );
   $to_frequency = get_post_meta( $post_id, 'to_frequency', true );
+  $package_type = get_package_type_from_partnum( $partnum );
 
+  $frequency = get_query_var( 'frequency' );
+
+  // Query the data from our REST endpoint
+  $data_partnum = ( ! empty( $frequency ) && is_float( $frequency ) )? $partnum . '-' . $frequency : $partnum . '-' . $from_frequency ;
   $data = [
-    'part' => $partnum . '-' . $from_frequency,
-    'package_type' => 'smd',
+    'part' => $data_partnum,
+    'package_type' => $package_type,
     'frequency_unit' => 'mhz'
   ];
-
-  //error_log('$data = ' . print_r($data, true) );
+  error_log('$data = ' . print_r( $data, true ) );
   $response = \FoxParts\restapi\get_options( $data, true );
 
   if( isset( $response->configuredPart ) && 0 < $response->availableParts ){
@@ -77,150 +113,288 @@ function get_part_details_table( $post_id ){
     $configuredPart['to_frequency'] = ['value' => $to_frequency, 'label' => $to_frequency];
   } else {
     return '<p>ERROR: No part details returned.</p>';
-    //'<pre>$from_frequency = ' . $from_frequency . ', $to_frequency = ' . $to_frequency . ';<br />$data = ' . print_r( $data, true ) . ';<br />$response = ' . print_r( $response, true ) . '</pre>';
   }
-
-  foreach ($configuredPart as $key => $value) {
-    $$key = $value;
-  }
+  error_log('$configuredPart = ' . print_r( $configuredPart, true ) );
 
   $table_row_maps = [
-    'c' => ['product_type','size','tolerance','stability','load','optemp'],
-    'o' => ['product_type','size','output','voltage','stability','optemp'],
+    'c' => ['product_type','size','frequency','tolerance','stability','load','optemp','length_mm','width_mm','height_mm'],
+    'o' => ['product_type','size','frequency','voltage','stability','optemp','output','load_capacitance','length_mm','width_mm','height_mm','packaging','reel_diameter_in_inches','country_of_origin'],
   ];
 
-  if( ! array_key_exists( strtolower( $product_type['value'] ) , $table_row_maps ) )
-    return '<div class="alert alert-warn">No table row map found for Product Type "' . $product_type['label'] . '".</div>';
+  if( ! array_key_exists( strtolower( $configuredPart['product_type']['value'] ) , $table_row_maps ) )
+    return '<div class="alert alert-warn">No table row map found for Product Type "' . $configuredPart['product_type']['label'] . '".</div>';
 
-  $frequency = get_query_var( 'frequency' );
+  $row_map = $table_row_maps[ strtolower( $configuredPart['product_type']['value'] ) ];
 
-  $row_map = $table_row_maps[ strtolower( $product_type['value'] ) ];
+  //$details = ( $frequency )? get_part_series_details( $partnum, $frequency ) : get_product_family_details( $partnum ) ;
+  // 10/14/2019 (12:22) - Need to handle $frequency like we did in previous line ☝️
+  $details = get_part_series_details(['partnum' => $partnum]);
+  if( $details ){
+    $details->load_capacitance = '<code>Missing in API?</code>';
+    $details->reel_diameter_in_inches = '<code>Missing in API?</code>';
+    $details->country_of_origin = '<code>Missing in API?</code>';
+  }
 
   $rows = [];
+  //$rows[] = ['heading' => 'ConfiguredPart','value' => '<pre>' . print_r($configuredPart,true) . '</pre>' . '; $row_map = <pre>' . print_r($row_map,true) . '</pre>'];
+  //$rows[] = [ 'heading' => 'Details', 'value' => '<pre>'. print_r($details,true).'</pre>' ];
+
+  // Part Number
+  if( $frequency )
+    $rows[] = [ 'heading' => 'Part Number', 'value' => $partnum . $frequency ];
+
+  // Description and Part Series
+  if( 0 < count( $details->product_family ) ){
+    foreach( $details->product_family as $product_family ){
+      if( 0 < count( $product_family->product ) ){
+        foreach( $product_family->product as $product ){
+          if( $partnum . $frequency == $product->name ){
+            $rows[] = [ 'heading' => 'Description', 'value' => $product->description ];
+            $rows[] = [ 'heading' => 'Part Series', 'value' => $details->name ];
+            $last_row = [ 'heading' => 'Life Cycle Status', 'value' => $product_family->part_life_cycle_status ];
+          }
+        }
+      }
+    }
+  }
+
   foreach ( $row_map as $variable ) {
+    //$rows[] = ['heading' => $variable, 'value' => '$variable = ' . $variable];
     $row = [];
     switch( $variable ){
+      case 'frequency':
+        $row = [ 'heading' => 'Frequency', 'value' => $frequency . 'MHz' ];
+        break;
+
       case 'optemp':
-        $row['heading'] = 'Op Temp';
+        $row['heading'] = 'Operating Temperature';
         break;
 
       case 'product_type':
-        $row['heading'] = 'Product Type';
+        $row['heading'] = 'Part Type';
         $frequency_display = ( $frequency )? $frequency : $from_frequency['value'] . '-' . $to_frequency['value'] ;
-        $row['value'] = $product_type['label'] . ' ' . $frequency_display . $frequency_unit['label'] . ' - ' . strtoupper( $package_type['label'] );
+        $package_type_labels = ['smd' => 'SMD', 'pin-thru' => 'Pin-Thru'];
+        $row['value'] = $configuredPart['product_type']['label'] . ' ' . $frequency_display . $configuredPart['frequency_unit']['label'] . ' - ' . $package_type_labels[ strtolower( $configuredPart['package_type']['label'] ) ];
+        break;
+
+      case 'stability':
+        $row = ['heading' => 'Frequency Stability (PPM)'];
+        break;
+
+      case 'length_mm':
+      case 'width_mm':
+      case 'height_mm':
+        $row['heading'] = ucwords( str_replace( '_mm',' (mm)', $variable ) );
         break;
 
       default:
         $row['heading'] = ucwords( $variable );
     }
 
-    if( ! isset( $row['value'] ) && '_' != $$variable['value'] ){
-      $row['value'] = $$variable['label'];
-    } else if( '_' == $$variable['value'] ) {
+    if( ! isset( $row['value'] ) && isset( $configuredPart[$variable] ) && '_' != $configuredPart[$variable]['value'] ){
+      $row['value'] = $configuredPart[$variable]['label'];
+    } else if( ! isset( $row['value'] ) && $details->$variable ) {
+      $row['value'] = $details->$variable;
+      unset( $details->$variable );
+    } else if( '_' == $configuredPart[$variable]['value'] ) {
       // Skip attributes without a value (i.e. `_`).
       continue;
     }
+    //if( ! isset( $row['value'] ) || empty( $row['value'] ) )
+      //$row['value'] = '(' . $details->$variable . ') $variable = ' . $variable;
 
     $rows[] = $row;
   }
 
-  $html = '';
-  $html.= '<table class="table table-striped table-sm"><colgroup><col style="width: 30%" /><col style="width: 70%;" /></colgroup>';
-  foreach( $rows as $row ){
-    $html.= '<tr><th scope="row">' . $row['heading'] . '</th><td>' . $row['value'] . '</td></tr>';
-  }
-
-  $details = ( $frequency )? get_part_series_details( $partnum, $frequency ) : get_product_family_details( $partnum ) ;
-
-  //$product_family_details = get_product_family_details( $partnum );
   if( $details ){
+    //$rows[] = ['heading' => '$details', 'value' => print_r($details,true)];
+
     foreach( $details as $key => $value ){
       if( ! empty( $value ) ){
+        $row = [];
         switch( $key ){
-          case 'products':
+          case 'country_of_origin':
+            $row = ['heading' => 'Country of Origin', 'value' => $value];
+            break;
+
+          case 'load_capacitance':
+            $row = ['heading' => 'Load Capacitance (pF)', 'value' => $value];
+            break;
+
+          case 'product_family':
+            // If we have a frequency, don't show a list of part numbers:
             if( $frequency )
               break;
 
-            $parts = [];
-            if( is_array( $value ) && 0 < count( $value ) ){
-              foreach( $value as $partnum ){
-                $frequency = ( \preg_match( '/[0-9]+\.[0-9]+$/', $partnum, $matches ) ) ? $matches[0] : false ;
-                $parts[] = [
-                  'series' => str_replace( $matches[0], '', $partnum ),
-                  'frequency' => $frequency,
-                ];
+            if( 0 < count( $value ) ){
+              foreach( $value as $product_family ){
+                if( stristr( $partnum, $product_family->name ) ){
+                  if( 0 < count( $product_family->product ) ){
+                    foreach( $product_family->product as $product ){
+                      /**
+                       * Extract Frequency from Part Number:
+                       *
+                       * I built the following regex with help from these:
+                       *
+                       * - https://regex101.com/r/lV0ExD/1/
+                       * - https://stackoverflow.com/questions/24342026/in-php-how-to-get-float-value-from-a-mixed-string
+                       */
+                      preg_match( '/(^.*?)([\d]+(?:\.[\d]+)+)$/', $product->name, $matches );
+                      $product_family = $matches[1];
+                      $frequency = $matches[2];
+                      $product_name = ( ! empty( $frequency ) )? '<a href="' . get_site_url() . '/foxpart/' . $product_family . '/' . $frequency . '" target="_blank">' . $product->name . '</a>' : $product->name ;
+                      $partlist[] = $product_name;
+                    }
+                  }
+                  $row = [ 'heading' => 'Products', 'value' => implode(', ', $partlist ) ];
+                  //$html.= '<tr><th scope="row">Parts</th><td>' . implode( ', ', $partlist ) . '</td></tr>';
+                }
               }
             }
-            foreach( $parts as $part ){
-              //$link = add_query_arg( [ 'frequency' => $part['frequency'] ], '/foxpart/' . $part['series'] );
-              $link = '/foxpart/' . $part['series'] . '/frequency/' . $part['frequency'];
-              $partlist[] = '<a href="' . $link . '" target="_blank">' . $part['series'] . $part['frequency'] . '</a>';
-            }
-            $html.= '<tr><th scope="row">Parts</th><td>' . implode( ', ', $partlist ) . '</td></tr>';
             break;
 
+          case 'individual_part_weight_grams':
+            $row = ['heading' => 'Individual Part Weight', 'value' => $value];
+            break;
+
+          case 'packaging':
+            $row = ['heading' => 'Packaging Method', 'value' => $value];
+            break;
+
+          case 'reel_diameter_in_inches':
+            $row = ['heading' => 'Reel diameter in inches', 'value' => $value];
+            break;
+
+          case 'cage_code':
           case 'data_sheet_url':
+          case 'export_control_classification_number':
           case 'Image of Part':
           case 'Data Sheet':
           case 'product_photo_part_image';
           case 'standard_lead_time_weeks':
           case 'output':
+          case 'moisture_sensitivity_level_msl':
           case 'name':
+          case 'package_name':
           case 'part_type':
+          case 'reach_compliant':
+          case 'static_sensitive':
             // nothing, skip
             break;
 
           default:
             $label = ( $frequency )? $key : get_key_label( $key );
-            $html.= '<tr><th scope="row">' . $label . '</th><td>' . $value . '</td></tr>';
+            if( is_array( $value ) )
+              $value = '<pre>'.print_r($value,true).'</pre>';
+            //$html.= '<tr><th scope="row">' . $label . '</th><td>' . $value . '</td></tr>';
+            $row = [ 'heading' => $label, 'value' => $value ];
         }
-
+        if( isset( $row ) && ! empty( $row ) )
+          $rows[] = $row;
       }
     }
+  }
+  $html = '<h3>Product Details</h3>';
+  $html.= '<table class="table table-striped table-sm"><colgroup><col style="width: 30%" /><col style="width: 70%;" /></colgroup>';
+  if( isset( $last_row ) )
+    $rows[] = $last_row;
+  foreach( $rows as $key => $row ){
+    $html.= '<tr><th scope="row">' . $row['heading'] . '</th><td>' . $row['value'] . '</td></tr>';
+  }
+  $html.= '</table>';
+  $html.= '<h3>REACH/RoHS Compliant</h3>';
+  $html.= '<table class="table table-striped table-sm"><colgroup><col style="width: 30%" /><col style="width: 70%;" /></colgroup>';
+  $rows = [
+    [
+      'heading' => 'Static Sensitive',
+      'value' => $details->static_sensitive,
+    ],
+    [
+      'heading' => 'Moisture Sensitivity Level',
+      'value' => $details->moisture_sensitivity_level_msl,
+    ],
+    [
+      'heading' => 'Cage Code',
+      'value' => $details->cage_code,
+    ],
+    [
+      'heading' => 'Export Control',
+      'value' => $details->export_control_classification_number,
+    ],
+    [
+      'heading' => 'Harmonized Tariff',
+      'value' => '<code>Missing in API?</code>',
+    ],
+    [
+      'heading' => 'Code Schedule B',
+      'value' => '<code>Missing in API?</code>',
+    ],
+  ];
+  foreach( $rows as $row ){
+    $html.= '<tr><th scope="row">' . $row['heading'] . '</th><td>' . $row['value'] . '</td></tr>';
   }
   $html.= '</table>';
 
   return $html;
 }
 
-function get_product_family_details( $partnum = null, $detail = null ){
+//function get_product_family_details( $partnum = null, $detail = null ){
+//$partnum = null, $detail = null
+function get_part_series_details( $atts ){
+  $args = shortcode_atts([
+    'partnum'   => null,
+    'detail'    => null,
+    'frequency' => null,
+  ], $atts );
   $product_family_details = [];
 
-  if( is_null( $partnum ) )
+  if( is_null( $args['partnum'] ) )
     return $product_family_details;
 
-  $product_family = get_product_family_from_partnum( $partnum );
-  $sf_api_request_url = get_site_url( null, 'wp-json/foxparts/v1/get_part_series?partnum=' . $product_family );
-  error_log('$sf_api_request_url = ' . $sf_api_request_url );
+  $part_series = get_part_series_from_partnum( $args['partnum'] );
+  $sf_api_request_url = get_site_url( null, 'wp-json/foxparts/v1/get_part_series?partnum=' . $part_series );
+  error_log( basename(__FILE__) . '::' . __LINE__ . ' $sf_api_request_url = ' . $sf_api_request_url );
   $sfRequest = \WP_REST_Request::from_url( $sf_api_request_url );
   $sfResponse = \FoxParts\restapi\get_part_series( $sfRequest );
 
-  // 10/02/2019 (05:32) - Need to rewrite below to work with $sfResponse->data->part_series
-  // Currently we're just checking $sfResponse->data.
-  if( $sfResponse->data && 0 < count($sfResponse->data->part_series) ){
+  if( $sfResponse->data && 0 < count($sfResponse->data) ){
     // Match to correct product series within the product family:
-    foreach( $sfResponse->data->part_series as $part_series ){
-      //*
-      if( ! is_null( $part_series->products ) && is_array( $part_series->products ) && 0 < count( $part_series->products ) ){
-        if( stristr( $part_series->products[0], $partnum ) ){
-          //$salesForcePartDetails = $part_series;
-          foreach ($part_series as $key => $value) {
-            $product_family_details[$key] = $value;
-          }
-          break;
-        }
+    foreach( $sfResponse->data as $part_series_data ){
+      if( $part_series == $part_series_data->name ){
+        switch( $args['detail'] ){
+          case 'data_sheet_url_part':
+            // Part specific data sheets are found inside product families
+            if( 0 < count( $part_series_data->product_family ) ){
+              foreach( $part_series_data->product_family as $product_family ){
+                if( stristr( $product_family->name, $args['partnum'] ) ){
+                  if( 0 < count( $product_family->product ) ){
+                    $full_part_no = $args['partnum'] . $args['freqeuncy'];
+                    foreach( $product_family->product as $product ){
+                      if( $full_part_no == $product->name )
+                        $detail = $args['detail'];
+                        return $product->$detail;
+                    }
+                  }
+                }
+              }
+            }
+            break;
+
+          default:
+            // By default we're searching for properties at the part series level:
+            if( ! is_null( $args['detail'] ) && property_exists( $part_series_data, $args['detail'] ) ){
+              $detail = $args['detail'];
+              return $part_series_data->$detail;
+            } else if( ! is_null( $args['detail'] ) && ! property_exists( $part_series_data, $args['detail'] ) ){
+              return false;
+            } else {
+              return $part_series_data;
+            }
+        } // switch( $args['detail'] )
       }
-      /**/
     }
   }
-
-  if( ! is_null( $detail ) && array_key_exists( $detail, $product_family_details ) ){
-    return $product_family_details[$detail];
-  } else if( ! is_null( $detail ) && ! array_key_exists( $detail, $product_family_details ) ){
-    return false;
-  } else {
-    return $product_family_details;
-  }
+  return false;
 }
 
 /*
@@ -241,6 +415,7 @@ function get_part_series( $partnum = null ){
 }
 /**/
 
+/*
 function get_part_series_details( $partnum = null, $frequency = null, $detail = null ){
   $sf_api_request_url = get_site_url( null, 'wp-json/foxparts/v1/get_web_part?partnum=' . $partnum . $frequency );
   $sfRequest = \WP_REST_Request::from_url( $sf_api_request_url );
@@ -265,15 +440,16 @@ function get_part_series_details( $partnum = null, $frequency = null, $detail = 
   }
 
 }
+/**/
 
 /**
- * Provided a Fox Part number returns the product family
+ * Provided a Fox Part number returns the part series
  *
  * @param      string   $partnum  The partnum
  *
- * @return     string  The product family from partnum.
+ * @return     string  The part series from partnum.
  */
-function get_product_family_from_partnum( $partnum = '' ){
+function get_part_series_from_partnum( $partnum = '' ){
   if( empty( $partnum ) )
     return false;
 

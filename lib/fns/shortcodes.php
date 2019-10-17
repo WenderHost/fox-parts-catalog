@@ -149,15 +149,34 @@ function part_datasheet( $atts ){
   $data_sheet = false;
   $post = get_post( $args['id'] );
   $partnum = $post->post_title;
-  if( $frequency ){
-    $data_sheet_url = \FoxParts\utilities\get_part_series_details( $partnum, $frequency, 'Data Sheet' );
-  } else {
-    $data_sheet_url = \FoxParts\utilities\get_product_family_details( $partnum, 'data_sheet_url' );
-  }
-  if( $data_sheet_url )
-    $data_sheet = '<a href="' . $data_sheet_url . '" target="_blank">Download Datasheet</a>';
 
-  return $data_sheet;
+  $data_sheets = [];
+
+  // Product Family Data Sheet
+  $product_family_data_sheet_url = \FoxParts\utilities\get_part_series_details(['partnum' => $partnum, 'detail' => 'data_sheet_url']);
+  $data_sheets[] = ['name' => 'Product Family Datasheet', 'url' => $product_family_data_sheet_url];
+
+  if( $frequency ){
+    // 10/14/2019 (12:20) - Need to rewrite the following call:
+    $part_data_sheet_url = \FoxParts\utilities\get_part_series_details(['partnum' => $partnum, 'frequency' => $frequency, 'detail' => 'data_sheet_url_part']);
+    if( $part_data_sheet_url ){
+      $data_sheets[] = ['name' => 'Part# Specific Datasheet', 'url' => $part_data_sheet_url];
+    } else {
+      $data_sheets[] = ['name' => 'Request Part# Specific Datasheet', 'url' => null];
+    }
+  }
+
+  $html = '<h5>Documents and Files</h5><ul>';
+  foreach( $data_sheets as $data_sheet ){
+    if( ! is_null( $data_sheet['url'] ) ){
+      $html.= '<li><a href="' . $data_sheet['url'] . '">' . $data_sheet['name'] . '</a></li>';
+    } else if( isset( $frequency ) && stristr( $data_sheet['name'], 'Request' ) ){
+      $html.= '<li><a href="' . FOXPC_FOXSELECT_URL . '" data-partnumber="' . $partnum . '-' . $frequency . '/SMD/MHz">' . $data_sheet['name'] . '</a></li>';
+    }
+  }
+  $html.= '</ul>';
+
+  return $html;
 }
 add_shortcode( 'part_datasheet', __NAMESPACE__ . '\\part_datasheet' );
 
@@ -176,7 +195,8 @@ function part_photo( $atts ){
   if( ! has_post_thumbnail( $args['id'] ) ){
     $post = get_post( $args['id'] );
     $partnum = $post->post_title;
-    $product_photo_part_image = \FoxParts\utilities\get_product_family_details( $partnum, 'product_photo_part_image' );
+    //$product_photo_part_image = \FoxParts\utilities\get_product_family_details( $partnum, 'product_photo_part_image' );
+    $product_photo_part_image = \FoxParts\utilities\get_part_series_details(['partnum' => $partnum,'detail' => 'product_photo_part_image']);
     if( ! empty( $product_photo_part_image ) ){
       require_once( plugin_dir_path( __FILE__ ) . '../classes/download-remote-image.php' );
 
@@ -351,7 +371,7 @@ function product_list( $atts ){
   wp_enqueue_script( 'productlist' );
   $upload_dir = wp_get_upload_dir();
   wp_localize_script( 'productlist', 'productListVars', [
-    'modalurl' => '#elementor-action%3Aaction%3Dpopup%3Aopen%20settings%3DeyJpZCI6IjMxMDQyIiwidG9nZ2xlIjpmYWxzZX0%3D',
+    'modalurl' => FOXPC_FOXSELECT_URL,
     'imageurl' => $upload_dir['baseurl'],
     'lists' => $lists,
   ]);
