@@ -172,7 +172,7 @@ function get_part_details_table( $post_id ){
 
       case 'product_type':
         $row['heading'] = 'Part Type';
-        $frequency_display = ( $frequency )? $frequency : $from_frequency['value'] . '-' . $to_frequency['value'] ;
+        $frequency_display = ( $frequency )? $frequency : $from_frequency . '-' . $to_frequency ;
         $package_type_labels = ['smd' => 'SMD', 'pin-thru' => 'Pin-Thru'];
         $row['value'] = $configuredPart['product_type']['label'] . ' ' . $frequency_display . $configuredPart['frequency_unit']['label'] . ' - ' . $package_type_labels[ strtolower( $configuredPart['package_type']['label'] ) ];
         break;
