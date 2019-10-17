@@ -14,6 +14,7 @@
 define( 'FOXPC_PLUGIN_DIR_URL', plugin_dir_url( __FILE__ ) );
 define( 'FOXPC_PLUGIN_DIR_PATH', plugin_dir_path( __FILE__ ) );
 define( 'FOXPC_PART_TYPES', ['C' => 'crystal', 'K' => 'crystal-khz','O' => 'oscillator','T' => 'tcxo','Y' => 'vcxo','S' => 'sso'] );
+define( 'FOXPC_FOXSELECT_URL', '#elementor-action%3Aaction%3Dpopup%3Aopen%20settings%3DeyJpZCI6IjMxMDQyIiwidG9nZ2xlIjpmYWxzZX0%3D' );
 
 // Initialize TypeRocket
 require ( 'lib/typerocket/init.php' );
