@@ -8,26 +8,14 @@ function add_query_vars( $vars ){
 }
 add_filter( 'query_vars', __NAMESPACE__ . '\\add_query_vars' );
 
-/*
+/**
+ * Add rewrite which contains the part frequency after the part slug/name
+ */
 function add_rewrites(){
   add_rewrite_tag( '%frequency%', '([0-9]+\.[0-9]+)' );
-  add_rewrite_rule( '^foxpart/[0-9a-zA-Z]+/([0-9]+\.[0-9]+)/?', 'index.php?post_type=foxpart&frequency=$matches[1]', 'bottom' );
+  add_rewrite_rule( 'foxpart/([0-9a-zA-Z_]+)/([0-9]+\.[0-9]+)/?', 'index.php?post_type=foxpart&name=$matches[1]&frequency=$matches[2]', 'top' );
 }
 add_action( 'init', __NAMESPACE__ . '\\add_rewrites', 10, 0 );
-
-function append_foxpart_link( $url, $post ){
-  if( 'foxpart' == get_post_type( $post ) && $frequency = get_query_var( 'frequency' ) ){
-    error_log('foxpart is post_type and frequency = ' . $frequency );
-  }
-  return $url;
-}
-add_filter( 'post_type_link', __NAMESPACE__ . '\\append_foxpart_link', 10, 2 );
-/**/
-
-function foxpart_endpoint(){
-  add_rewrite_endpoint( 'frequency', EP_PERMALINK );
-}
-add_action( 'init', __NAMESPACE__ . '\\foxpart_endpoint' );
 
 /**
  * Modify the search query
