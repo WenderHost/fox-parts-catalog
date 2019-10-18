@@ -91,11 +91,12 @@ function get_part_details_table( $post_id ){
 
   $post = get_post( $post_id );
   $partnum = $post->post_title;
+  $sf_api_partnum = standardize_search_string( $partnum, false );
   $from_frequency = get_post_meta( $post_id, 'from_frequency', true );
   $to_frequency = get_post_meta( $post_id, 'to_frequency', true );
   $package_type = get_package_type_from_partnum( $partnum );
 
-  $frequency = get_query_var( 'frequency' );
+  $frequency = (float) get_query_var( 'frequency' );
 
   // Query the data from our REST endpoint
   $data_partnum = ( ! empty( $frequency ) && is_float( $frequency ) )? $partnum . '-' . $frequency : $partnum . '-' . $from_frequency ;
@@ -104,7 +105,7 @@ function get_part_details_table( $post_id ){
     'package_type' => $package_type,
     'frequency_unit' => 'mhz'
   ];
-  error_log('$data = ' . print_r( $data, true ) );
+  \foxparts_error_log('$data = ' . print_r( $data, true ) );
   $response = \FoxParts\restapi\get_options( $data, true );
 
   if( isset( $response->configuredPart ) && 0 < $response->availableParts ){
@@ -114,25 +115,30 @@ function get_part_details_table( $post_id ){
   } else {
     return '<p>ERROR: No part details returned.</p>';
   }
-  error_log('$configuredPart = ' . print_r( $configuredPart, true ) );
+  //error_log('$configuredPart = ' . print_r( $configuredPart, true ) );
 
   $table_row_maps = [
-    'c' => ['product_type','size','frequency','tolerance','stability','load','optemp','length_mm','width_mm','height_mm'],
-    'o' => ['product_type','size','frequency','voltage','stability','optemp','output','load_capacitance','length_mm','width_mm','height_mm','packaging','reel_diameter_in_inches','country_of_origin'],
+    'c' => ['product_type','size','frequency','tolerance','stability','load','optemp'],
+    'o' => ['product_type','size','frequency','voltage','stability','optemp','output'],
   ];
+
 
   if( ! array_key_exists( strtolower( $configuredPart['product_type']['value'] ) , $table_row_maps ) )
     return '<div class="alert alert-warn">No table row map found for Product Type "' . $configuredPart['product_type']['label'] . '".</div>';
 
   $row_map = $table_row_maps[ strtolower( $configuredPart['product_type']['value'] ) ];
+  $common_rows = ['circuit_condition','length_mm','width_mm','height_mm','packaging','country_of_origin','individual_part_weight_grams','part_life_cycle_status','reach_compliant','rohs_compliant','static_sensitive','moisture_sensitivity_level_msl','cage_code','export_control_classification_number','harmonized_tariff','code_schedule_b'];
+  $row_map = array_merge( $row_map, $common_rows );
 
   //$details = ( $frequency )? get_part_series_details( $partnum, $frequency ) : get_product_family_details( $partnum ) ;
   // 10/14/2019 (12:22) - Need to handle $frequency like we did in previous line ☝️
   $details = get_part_series_details(['partnum' => $partnum]);
   if( $details ){
-    $details->load_capacitance = '<code>Missing in API?</code>';
-    $details->reel_diameter_in_inches = '<code>Missing in API?</code>';
+    $details->circuit_condition = '<code>Missing in API?</code>';
     $details->country_of_origin = '<code>Missing in API?</code>';
+    $details->rohs_compliant = 'Y';
+    $details->harmonized_tariff = '<code>Missing in API?</code>';
+    $details->code_schedule_b = '<code>Missing in API?</code>';
   }
 
   $rows = [];
@@ -146,12 +152,16 @@ function get_part_details_table( $post_id ){
   // Description and Part Series
   if( 0 < count( $details->product_family ) ){
     foreach( $details->product_family as $product_family ){
+      //\foxparts_error_log( 'Checking product families... '."\n".'$product_family->name = ' . $product_family->name ."\n". '$sf_api_partnum = ' . $sf_api_partnum );
+      if( stristr( $product_family->name, $sf_api_partnum ) )
+        $details->part_life_cycle_status = $product_family->part_life_cycle_status;
+
       if( 0 < count( $product_family->product ) ){
         foreach( $product_family->product as $product ){
+
           if( $partnum . $frequency == $product->name ){
             $rows[] = [ 'heading' => 'Description', 'value' => $product->description ];
             $rows[] = [ 'heading' => 'Part Series', 'value' => $details->name ];
-            $last_row = [ 'heading' => 'Life Cycle Status', 'value' => $product_family->part_life_cycle_status ];
           }
         }
       }
@@ -159,9 +169,16 @@ function get_part_details_table( $post_id ){
   }
 
   foreach ( $row_map as $variable ) {
-    //$rows[] = ['heading' => $variable, 'value' => '$variable = ' . $variable];
     $row = [];
     switch( $variable ){
+      case 'circuit_condition':
+        if( 'c' == strtolower( $configuredPart['product_type']['value'] ) || 'k' == strtolower( $configuredPart['product_type']['value'] ) ){
+          $row['heading'] = 'Load Capcitance (pF)';
+        } else {
+          $row['heading'] = 'Output Load';
+        }
+        break;
+
       case 'frequency':
         $row = [ 'heading' => 'Frequency', 'value' => $frequency . 'MHz' ];
         break;
@@ -188,42 +205,40 @@ function get_part_details_table( $post_id ){
         break;
 
       default:
-        $row['heading'] = ucwords( $variable );
+        $row['heading'] = get_key_label( $variable );
     }
 
     if( ! isset( $row['value'] ) && isset( $configuredPart[$variable] ) && '_' != $configuredPart[$variable]['value'] ){
       $row['value'] = $configuredPart[$variable]['label'];
-    } else if( ! isset( $row['value'] ) && $details->$variable ) {
+    } else if( ! isset( $row['value'] ) && isset( $details->$variable ) ) {
       $row['value'] = $details->$variable;
       unset( $details->$variable );
-    } else if( '_' == $configuredPart[$variable]['value'] ) {
+    } else if( array_key_exists( $variable, $configuredPart ) && '_' == $configuredPart[$variable]['value'] ) {
       // Skip attributes without a value (i.e. `_`).
       continue;
     }
+    if( isset( $row['value'] ) && 'Y' == $row['value'] )
+      $row['value'] = '<i class="fa fa-check-circle"></i>';
     //if( ! isset( $row['value'] ) || empty( $row['value'] ) )
       //$row['value'] = '(' . $details->$variable . ') $variable = ' . $variable;
 
     $rows[] = $row;
   }
 
+  //*
   if( $details ){
-    //$rows[] = ['heading' => '$details', 'value' => print_r($details,true)];
 
     foreach( $details as $key => $value ){
       if( ! empty( $value ) ){
         $row = [];
         switch( $key ){
-          case 'country_of_origin':
-            $row = ['heading' => 'Country of Origin', 'value' => $value];
-            break;
-
-          case 'load_capacitance':
-            $row = ['heading' => 'Load Capacitance (pF)', 'value' => $value];
-            break;
 
           case 'product_family':
             // If we have a frequency, don't show a list of part numbers:
             if( $frequency )
+              break;
+
+            if( ! is_user_logged_in() && ! is_admin() )
               break;
 
             if( 0 < count( $value ) ){
@@ -231,14 +246,13 @@ function get_part_details_table( $post_id ){
                 if( stristr( $partnum, $product_family->name ) ){
                   if( 0 < count( $product_family->product ) ){
                     foreach( $product_family->product as $product ){
-                      /**
-                       * Extract Frequency from Part Number:
-                       *
-                       * I built the following regex with help from these:
-                       *
-                       * - https://regex101.com/r/lV0ExD/1/
-                       * - https://stackoverflow.com/questions/24342026/in-php-how-to-get-float-value-from-a-mixed-string
-                       */
+                      //*
+                      // Extract Frequency from Part Number:
+                      //
+                      // I built the following regex with help from these:
+                      //
+                      // - https://regex101.com/r/lV0ExD/1/
+                      // - https://stackoverflow.com/questions/24342026/in-php-how-to-get-float-value-from-a-mixed-string
                       preg_match( '/(^.*?)([\d]+(?:\.[\d]+)+)$/', $product->name, $matches );
                       $product_family = $matches[1];
                       $frequency = $matches[2];
@@ -246,47 +260,27 @@ function get_part_details_table( $post_id ){
                       $partlist[] = $product_name;
                     }
                   }
-                  $row = [ 'heading' => 'Products', 'value' => implode(', ', $partlist ) ];
-                  //$html.= '<tr><th scope="row">Parts</th><td>' . implode( ', ', $partlist ) . '</td></tr>';
+                  $partlist_html = ( is_array( $partlist ) && 0 < count( $partlist ) )? implode(', ', $partlist ) : '<code>No parts found.</code>' ;
+                  $row = [ 'heading' => 'Products', 'value' => '<div class="alert alert-info" style="margin-bottom: 20px;">NOTE: This row only shows to logged in Fox Website Admins. Regular users will not see the below list of parts:</div>' . $partlist_html ];
                 }
               }
             }
             break;
 
-          case 'individual_part_weight_grams':
-            $row = ['heading' => 'Individual Part Weight', 'value' => $value];
-            break;
-
-          case 'packaging':
-            $row = ['heading' => 'Packaging Method', 'value' => $value];
-            break;
-
-          case 'reel_diameter_in_inches':
-            $row = ['heading' => 'Reel diameter in inches', 'value' => $value];
-            break;
-
-          case 'cage_code':
           case 'data_sheet_url':
-          case 'export_control_classification_number':
-          case 'Image of Part':
-          case 'Data Sheet':
           case 'product_photo_part_image';
           case 'standard_lead_time_weeks':
           case 'output':
-          case 'moisture_sensitivity_level_msl':
           case 'name':
           case 'package_name':
           case 'part_type':
-          case 'reach_compliant':
-          case 'static_sensitive':
             // nothing, skip
             break;
 
           default:
             $label = ( $frequency )? $key : get_key_label( $key );
-            if( is_array( $value ) )
-              $value = '<pre>'.print_r($value,true).'</pre>';
-            //$html.= '<tr><th scope="row">' . $label . '</th><td>' . $value . '</td></tr>';
+            if( 'Y' == $value )
+              $value = '<i class="fa fa-check-circle"></i>';
             $row = [ 'heading' => $label, 'value' => $value ];
         }
         if( isset( $row ) && ! empty( $row ) )
@@ -294,44 +288,14 @@ function get_part_details_table( $post_id ){
       }
     }
   }
+  /**/
   $html = '<h3>Product Details</h3>';
   $html.= '<table class="table table-striped table-sm"><colgroup><col style="width: 30%" /><col style="width: 70%;" /></colgroup>';
   if( isset( $last_row ) )
     $rows[] = $last_row;
   foreach( $rows as $key => $row ){
-    $html.= '<tr><th scope="row">' . $row['heading'] . '</th><td>' . $row['value'] . '</td></tr>';
-  }
-  $html.= '</table>';
-  $html.= '<h3>REACH/RoHS Compliant</h3>';
-  $html.= '<table class="table table-striped table-sm"><colgroup><col style="width: 30%" /><col style="width: 70%;" /></colgroup>';
-  $rows = [
-    [
-      'heading' => 'Static Sensitive',
-      'value' => $details->static_sensitive,
-    ],
-    [
-      'heading' => 'Moisture Sensitivity Level',
-      'value' => $details->moisture_sensitivity_level_msl,
-    ],
-    [
-      'heading' => 'Cage Code',
-      'value' => $details->cage_code,
-    ],
-    [
-      'heading' => 'Export Control',
-      'value' => $details->export_control_classification_number,
-    ],
-    [
-      'heading' => 'Harmonized Tariff',
-      'value' => '<code>Missing in API?</code>',
-    ],
-    [
-      'heading' => 'Code Schedule B',
-      'value' => '<code>Missing in API?</code>',
-    ],
-  ];
-  foreach( $rows as $row ){
-    $html.= '<tr><th scope="row">' . $row['heading'] . '</th><td>' . $row['value'] . '</td></tr>';
+    $value = ( isset( $row['value'] ) )? $row['value'] : '' ;
+    $html.= '<tr><th scope="row">' . $row['heading'] . '</th><td>' . $value . '</td></tr>';
   }
   $html.= '</table>';
 
@@ -353,7 +317,7 @@ function get_part_series_details( $atts ){
 
   $part_series = get_part_series_from_partnum( $args['partnum'] );
   $sf_api_request_url = get_site_url( null, 'wp-json/foxparts/v1/get_part_series?partnum=' . $part_series );
-  error_log( basename(__FILE__) . '::' . __LINE__ . ' $sf_api_request_url = ' . $sf_api_request_url );
+  \foxparts_error_log( '$sf_api_request_url = ' . $sf_api_request_url );
   $sfRequest = \WP_REST_Request::from_url( $sf_api_request_url );
   $sfResponse = \FoxParts\restapi\get_part_series( $sfRequest );
 
@@ -464,31 +428,25 @@ function get_part_series_from_partnum( $partnum = '' ){
   return substr( $trimmed_partnum, 0, $length );
 }
 
+/**
+ * Gets a human readable label given a key supplied from the Salesforce API JSON
+ *
+ * @param      string  $key    The key
+ *
+ * @return     string  The label.
+ */
 function get_key_label( $key ){
+  $keys_and_labels = ['individual_part_weight_grams' => 'Individual Part Weight', 'moisture_sensitivity_level_msl' => 'Moisture Sensitivity Level (MSL)', 'packaging' => 'Packaging Method', 'part_life_cycle_status' => 'Life Cycle Status', 'reach_compliant' => 'REACH Compliant', 'rohs_compliant' => 'RoHS Compliant', 'static_sensitive' => 'Static Sensitive'];
+  if( array_key_exists($key, $keys_and_labels ) )
+    return $keys_and_labels[$key];
+
   switch( $key ){
-    case 'width_mm':
-      $label = 'Width (mm)';
-      break;
-
-    case 'moisture_sensitivity_level_msl':
-      $label = 'Moisture Sensitivity Level (MSL)';
-      break;
-
-    case 'reach_compliant':
-      $label = 'REACH Compliant';
-      break;
-
-    case 'rohs_compliant':
-      $label = 'RoHS Compliant';
-      break;
-
-    case 'static_sensitive':
-      $label = 'Static Sensitive';
-      break;
-
     default:
       $key = str_replace( '_', ' ', $key );
-      $label = ( stristr( $key, 'mm' ) )? \ucfirst( str_replace( 'mm', '(mm)', $key ) ) : \ucwords($key);
+      $ignore = ['my', 'is', 'to', 'the', 'of'];
+      $pattern = "~^[a-z]+|\b(?|" . implode("|", $ignore) . ")\b(*SKIP)(*FAIL)|[a-z]+~";
+      $modified_label = preg_replace_callback( $pattern, function($m) { return ucfirst($m[0]); }, $key );
+      $label = ( stristr( $key, 'mm' ) )? \ucfirst( str_replace( 'mm', '(mm)', $key ) ) : $modified_label;
   }
   return $label;
 }
