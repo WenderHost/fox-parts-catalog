@@ -52,7 +52,7 @@ function get_options( $data, $return = false ){
   $options = $part_array[0];
   $frequency = $part_array[1];
 
-  error_log( str_repeat( '-', 80 ) );
+  //error_log( str_repeat( '-', 80 ) );
 
   $start = ( 'F' == substr( $options, 0, 1) )? 1 : 0;
   $options_array = str_split( substr( $options, $start ) );
@@ -138,7 +138,7 @@ function get_options( $data, $return = false ){
     // To account for this exception, we send along size info
     if( 'pin_1' == $key && $configuredPart['size'] ){
       $map_values_args['size'] = $configuredPart['size']['value'];
-      error_log('$key = '.$key.';$configuredPart[\'size\'] = ' . print_r( $configuredPart['size'], true) );
+      \foxparts_error_log('$key = '.$key.';$configuredPart[\'size\'] = ' . print_r( $configuredPart['size'], true) );
     }
 
     $mapped_value = map_values_to_labels( $map_values_args );
@@ -150,7 +150,7 @@ function get_options( $data, $return = false ){
       $configuredPart['product_type'] = $mapped_value[0];
   }
   $response->configuredPart = $configuredPart;
-  //error_log( 'configuredPart = ' . print_r( $configuredPart, true ) );
+  //\foxparts_error_log( 'configuredPart = ' . print_r( $configuredPart, true ) );
 
   $tax_query = [
     [
@@ -550,7 +550,7 @@ function map_values_to_labels( $atts ){
   ], $atts );
 
   if( 'pin_1' == $args['setting'] )
-    error_log('map_values_to_labels('.print_r($args,true).')');
+    \foxparts_error_log('map_values_to_labels('.print_r($args,true).')');
 
   if( 0 == count( $args['values'] ) || ! is_array( $args['values'] ) )
     return false;
