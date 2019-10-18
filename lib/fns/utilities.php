@@ -255,8 +255,8 @@ function get_part_details_table( $post_id ){
                       // - https://stackoverflow.com/questions/24342026/in-php-how-to-get-float-value-from-a-mixed-string
                       preg_match( '/(^.*?)([\d]+(?:\.[\d]+)+)$/', $product->name, $matches );
                       $product_family = $matches[1];
-                      $frequency = $matches[2];
-                      $product_name = ( ! empty( $frequency ) )? '<a href="' . get_site_url() . '/foxpart/' . $product_family . '/' . $frequency . '" target="_blank">' . $product->name . '</a>' : $product->name ;
+                      $part_frequency = $matches[2];
+                      $product_name = ( ! empty( $part_frequency ) )? '<a href="' . get_site_url() . '/foxpart/' . $product_family . '/' . $part_frequency . '" target="_blank">' . $product->name . '</a>' : $product->name ;
                       $partlist[] = $product_name;
                     }
                   }
@@ -289,7 +289,7 @@ function get_part_details_table( $post_id ){
     }
   }
   /**/
-  $html = '<h3>Product Details</h3>';
+  $html = ( $frequency )? '<h3>Product Details</h3>' : '<h3>Product Family Details</h3>';
   $html.= '<table class="table table-striped table-sm"><colgroup><col style="width: 30%" /><col style="width: 70%;" /></colgroup>';
   if( isset( $last_row ) )
     $rows[] = $last_row;
