@@ -14,7 +14,7 @@ namespace FoxParts\shortcodes;
 function foxselect( $atts ){
   static $called = false;
   if( $called ){
-    error_log('foxselect shortcode has been called. returning...');
+    \foxparts_error_log('foxselect shortcode has been called. returning...');
     return;
   }
 
@@ -62,7 +62,7 @@ function foxselect( $atts ){
         'package_type' => $part_number[1],
         'frequency_unit' => $part_number[2]
       ];
-      error_log('$args = ' . print_r( $args, true ) . "\n\$data = " . print_r($data, true) );
+      \foxparts_error_log('$args = ' . print_r( $args, true ) . "\n\$data = " . print_r($data, true) );
       $part_options_json = \FoxParts\restapi\get_options( $data, true );
 
       $valid_external_part_options = ['part_type','size','frequency','tolerance','stability','load','optemp'];
