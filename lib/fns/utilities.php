@@ -127,18 +127,14 @@ function get_part_details_table( $post_id ){
     return '<div class="alert alert-warn">No table row map found for Product Type "' . $configuredPart['product_type']['label'] . '".</div>';
 
   $row_map = $table_row_maps[ strtolower( $configuredPart['product_type']['value'] ) ];
-  $common_rows = ['circuit_condition','length_mm','width_mm','height_mm','packaging','country_of_origin','individual_part_weight_grams','part_life_cycle_status','reach_compliant','rohs_compliant','static_sensitive','moisture_sensitivity_level_msl','cage_code','export_control_classification_number','harmonized_tariff','code_schedule_b'];
+  $common_rows = ['circuit_condition','length_mm','width_mm','height_mm','packaging','country_of_origin','individual_part_weight_grams','part_life_cycle_status','reach_compliant','rohs_compliant','static_sensitive','moisture_sensitivity_level_msl','cage_code','export_control_classification_number','hts_code','schedule_b_export_code'];
   $row_map = array_merge( $row_map, $common_rows );
 
   //$details = ( $frequency )? get_part_series_details( $partnum, $frequency ) : get_product_family_details( $partnum ) ;
   // 10/14/2019 (12:22) - Need to handle $frequency like we did in previous line ☝️
   $details = get_part_series_details(['partnum' => $partnum]);
   if( $details ){
-    $details->circuit_condition = '<code>Missing in API?</code>';
-    $details->country_of_origin = '<code>Missing in API?</code>';
     $details->rohs_compliant = 'Y';
-    $details->harmonized_tariff = '<code>Missing in API?</code>';
-    $details->code_schedule_b = '<code>Missing in API?</code>';
   }
 
   $rows = [];
@@ -171,14 +167,6 @@ function get_part_details_table( $post_id ){
   foreach ( $row_map as $variable ) {
     $row = [];
     switch( $variable ){
-      case 'circuit_condition':
-        if( 'c' == strtolower( $configuredPart['product_type']['value'] ) || 'k' == strtolower( $configuredPart['product_type']['value'] ) ){
-          $row['heading'] = 'Load Capcitance (pF)';
-        } else {
-          $row['heading'] = 'Output Load';
-        }
-        break;
-
       case 'frequency':
         $row = [ 'heading' => 'Frequency', 'value' => $frequency . 'MHz' ];
         break;
@@ -204,6 +192,33 @@ function get_part_details_table( $post_id ){
         $row['heading'] = ucwords( str_replace( '_mm',' (mm)', $variable ) );
         break;
 
+      case 'schedule_b_export_code':
+      case 'hts_code':
+      case 'country_of_origin':
+      case 'circuit_condition':
+        if( 'circuit_condition' == $variable ){
+          if( 'c' == strtolower( $configuredPart['product_type']['value'] ) || 'k' == strtolower( $configuredPart['product_type']['value'] ) ){
+            $row['heading'] = 'Load Capcitance (pF)';
+          } else {
+            $row['heading'] = 'Output Load';
+          }
+        } else {
+          $row['heading'] = get_key_label( $variable );
+        }
+
+        if( 0 < count( $details->product_family ) ){
+          foreach( $details->product_family as $product_family ){
+            if( stristr( $product_family->name, $sf_api_partnum ) ){
+              if( 0 < count( $product_family->product ) ){
+                $row['value'] = $product_family->product[0]->$variable;
+              }
+            }
+          }
+        }
+
+        //$row['value'] = ( 'schedule_b_export_code' == $variable )? '<pre>$details = ' . print_r( $details, true) . '</pre>' : '...';
+        break;
+
       default:
         $row['heading'] = get_key_label( $variable );
     }
@@ -219,8 +234,9 @@ function get_part_details_table( $post_id ){
     }
     if( isset( $row['value'] ) && 'Y' == $row['value'] )
       $row['value'] = '<i class="fa fa-check-circle"></i>';
-    //if( ! isset( $row['value'] ) || empty( $row['value'] ) )
-      //$row['value'] = '(' . $details->$variable . ') $variable = ' . $variable;
+
+    if( '...' == $row['value'] )
+      $row['value'] = '<code>Missing in the API?</code>';
 
     $rows[] = $row;
   }
@@ -436,7 +452,7 @@ function get_part_series_from_partnum( $partnum = '' ){
  * @return     string  The label.
  */
 function get_key_label( $key ){
-  $keys_and_labels = ['individual_part_weight_grams' => 'Individual Part Weight', 'moisture_sensitivity_level_msl' => 'Moisture Sensitivity Level (MSL)', 'packaging' => 'Packaging Method', 'part_life_cycle_status' => 'Life Cycle Status', 'reach_compliant' => 'REACH Compliant', 'rohs_compliant' => 'RoHS Compliant', 'static_sensitive' => 'Static Sensitive'];
+  $keys_and_labels = ['export_control_classification_number' => 'Export Control','hts_code' => 'Harminized Tariff', 'individual_part_weight_grams' => 'Individual Part Weight', 'moisture_sensitivity_level_msl' => 'Moisture Sensitivity Level (MSL)', 'packaging' => 'Packaging Method', 'part_life_cycle_status' => 'Life Cycle Status', 'reach_compliant' => 'REACH Compliant', 'rohs_compliant' => 'RoHS Compliant','schedule_b_export_code' => 'Code Schedule B', 'static_sensitive' => 'Static Sensitive'];
   if( array_key_exists($key, $keys_and_labels ) )
     return $keys_and_labels[$key];
 
