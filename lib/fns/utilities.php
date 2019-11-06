@@ -120,6 +120,8 @@ function get_part_details_table( $post_id ){
   $table_row_maps = [
     'c' => ['product_type','size','frequency','tolerance','stability','load','optemp'],
     'o' => ['product_type','size','frequency','voltage','stability','optemp','output'],
+    't' => ['product_type','size','frequency','output','voltage','stability','optemp'],
+    'y' => ['product_type','size','frequency','output','voltage','stability','optemp'],
   ];
 
 
@@ -148,16 +150,26 @@ function get_part_details_table( $post_id ){
   // Description and Part Series
   if( 0 < count( $details->product_family ) ){
     foreach( $details->product_family as $product_family ){
-      //\foxparts_error_log( 'Checking product families... '."\n".'$product_family->name = ' . $product_family->name ."\n". '$sf_api_partnum = ' . $sf_api_partnum );
-      if( stristr( $product_family->name, $sf_api_partnum ) )
-        $details->part_life_cycle_status = $product_family->part_life_cycle_status;
+
+      if( ! stristr( $sf_api_partnum, strtolower( $product_family->name) ) )
+        continue;
+
+      \foxparts_error_log( 'PRODUCT FAMILY: '."\n".'👉 $product_family->name = ' . $product_family->name ."\n". '👉 $sf_api_partnum = ' . $sf_api_partnum );
+
+      $details->part_life_cycle_status = $product_family->part_life_cycle_status;
 
       if( 0 < count( $product_family->product ) ){
+        $details->country_of_origin = $product_family->product[0]->country_of_origin;
+        $details->hts_code = $product_family->product[0]->hts_code;
+        $details->schedule_b_export_code = $product_family->product[0]->schedule_b_export_code;
+        $details->circuit_condition = $product_family->product[0]->circuit_condition;
+
         foreach( $product_family->product as $product ){
 
           if( $partnum . $frequency == $product->name ){
             $rows[] = [ 'heading' => 'Description', 'value' => $product->description ];
             $rows[] = [ 'heading' => 'Part Series', 'value' => $details->name ];
+            //$rows[] = [ 'heading' => 'Harminized Tariff', 'value' => $product->hts_code ];
           }
         }
       }
@@ -198,7 +210,7 @@ function get_part_details_table( $post_id ){
       case 'circuit_condition':
         if( 'circuit_condition' == $variable ){
           if( 'c' == strtolower( $configuredPart['product_type']['value'] ) || 'k' == strtolower( $configuredPart['product_type']['value'] ) ){
-            $row['heading'] = 'Load Capcitance (pF)';
+            $row['heading'] = 'Load Capacitance (pF)';
           } else {
             $row['heading'] = 'Output Load';
           }
@@ -206,6 +218,8 @@ function get_part_details_table( $post_id ){
           $row['heading'] = get_key_label( $variable );
         }
 
+        /*
+        // 11/06/2019 (12:38) - Commented this out as it was creating duplicate rows, I don't think we need this anymore?
         if( 0 < count( $details->product_family ) ){
           foreach( $details->product_family as $product_family ){
             if( stristr( $product_family->name, $sf_api_partnum ) ){
@@ -215,6 +229,7 @@ function get_part_details_table( $post_id ){
             }
           }
         }
+        /**/
 
         //$row['value'] = ( 'schedule_b_export_code' == $variable )? '<pre>$details = ' . print_r( $details, true) . '</pre>' : '...';
         break;
@@ -235,8 +250,18 @@ function get_part_details_table( $post_id ){
     if( isset( $row['value'] ) && 'Y' == $row['value'] )
       $row['value'] = '<i class="fa fa-check-circle"></i>';
 
-    if( '...' == $row['value'] )
-      $row['value'] = '<code>Missing in the API?</code>';
+    if( ! array_key_exists('value', $row ) || '...' == $row['value'] ){
+      //*
+      if( is_user_logged_in() && current_user_can( 'edit_pages' ) ){
+        $row['value'] = '<code>Missing in the API? (This row only shows for logged in admins.)</code>';
+      } else {
+        continue;
+      }
+      /**/
+    }
+
+    if( 'Frequency' == $row['heading'] && '0MHz' == $row['value'] )
+      continue;
 
     $rows[] = $row;
   }
@@ -269,14 +294,18 @@ function get_part_details_table( $post_id ){
                       //
                       // - https://regex101.com/r/lV0ExD/1/
                       // - https://stackoverflow.com/questions/24342026/in-php-how-to-get-float-value-from-a-mixed-string
+                      if( stristr( $product->name, '-' ) )
+                        continue; // Product names with `dashes` are custom products, we skip them
                       preg_match( '/(^.*?)([\d]+(?:\.[\d]+)+)$/', $product->name, $matches );
+                      if( ! $matches )
+                        continue;
                       $product_family = $matches[1];
                       $part_frequency = $matches[2];
                       $product_name = ( ! empty( $part_frequency ) )? '<a href="' . get_site_url() . '/foxpart/' . $product_family . '/' . $part_frequency . '" target="_blank">' . $product->name . '</a>' : $product->name ;
                       $partlist[] = $product_name;
                     }
                   }
-                  $partlist_html = ( is_array( $partlist ) && 0 < count( $partlist ) )? implode(', ', $partlist ) : '<code>No parts found.</code>' ;
+                  $partlist_html = ( isset($partlist) && is_array( $partlist ) && 0 < count( $partlist ) )? implode(', ', $partlist ) : '<code>No parts found.</code>' ;
                   $row = [ 'heading' => 'Products', 'value' => '<div class="alert alert-info" style="margin-bottom: 20px;">NOTE: This row only shows to logged in Fox Website Admins. Regular users will not see the below list of parts:</div>' . $partlist_html ];
                 }
               }
@@ -333,7 +362,7 @@ function get_part_series_details( $atts ){
 
   $part_series = get_part_series_from_partnum( $args['partnum'] );
   $sf_api_request_url = get_site_url( null, 'wp-json/foxparts/v1/get_part_series?partnum=' . $part_series );
-  \foxparts_error_log( '$sf_api_request_url = ' . $sf_api_request_url );
+  \foxparts_error_log( '📡 Requesting: ' . $sf_api_request_url );
   $sfRequest = \WP_REST_Request::from_url( $sf_api_request_url );
   $sfResponse = \FoxParts\restapi\get_part_series( $sfRequest );
 
