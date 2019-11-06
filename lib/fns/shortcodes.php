@@ -122,8 +122,10 @@ function part_number( $atts ){
     'id' => null,
   ], $atts );
 
-  if( is_null( $args['id'] ) )
-    return '<p><code>Missing ID.</code></p>';
+  if( is_null( $args['id'] ) ){
+    global $post;
+    $args['id'] = $post->ID;
+  }
 
   $part_number = get_the_title( $args['id'] );
   if( $frequency = get_query_var( 'frequency' ) )
@@ -162,7 +164,7 @@ function part_datasheet( $atts ){
     if( $part_data_sheet_url ){
       $data_sheets[] = ['name' => 'Part# Specific Datasheet', 'url' => $part_data_sheet_url];
     } else {
-      $data_sheets[] = ['name' => 'Request Part# Specific Datasheet', 'url' => null];
+      $data_sheets[] = ['name' => 'Request Part# Specific Datasheet', 'url' => '#elementor-action%3Aaction%3Dpopup%3Aopen%20settings%3DeyJpZCI6IjM3NjYyIiwidG9nZ2xlIjpmYWxzZX0%3D' ];
     }
   }
 
