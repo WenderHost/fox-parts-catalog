@@ -24,6 +24,7 @@ require ( 'lib/post-types/foxpart.php' );
 
 // Load Functions
 require ( 'lib/fns/enqueues.php' );
+require ( 'lib/fns/redirection.php' );
 require ( 'lib/fns/rest-api.php' );
 require ( 'lib/fns/save_post.php' );
 require ( 'lib/fns/shortcodes.php' );
@@ -41,6 +42,6 @@ function foxparts_error_log( $message = null ){
 
   if( 1 == $counter )
     error_log( "\n\n" . str_repeat('-', 25 ) . ' STARTING DEBUG [' . date('h:i:sa', current_time('timestamp') ) . '] ' . str_repeat('-', 25 ) . "\n\n" );
-  error_log( $counter . '. ' . basename( $caller['file'] ) . '::' . $caller['line'] . ' ' . $message );
+  error_log( "\n" . $counter . '. ' . basename( $caller['file'] ) . '::' . $caller['line'] . "\n" . $message . "\n---\n" );
   $counter++;
 }
