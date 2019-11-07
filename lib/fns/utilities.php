@@ -251,13 +251,11 @@ function get_part_details_table( $post_id ){
       $row['value'] = '<i class="fa fa-check-circle"></i>';
 
     if( ! array_key_exists('value', $row ) || '...' == $row['value'] ){
-      //*
       if( is_user_logged_in() && current_user_can( 'edit_pages' ) ){
         $row['value'] = '<code>Missing in the API? (This row only shows for logged in admins.)</code>';
       } else {
         continue;
       }
-      /**/
     }
 
     if( 'Frequency' == $row['heading'] && '0MHz' == $row['value'] )
@@ -319,6 +317,7 @@ function get_part_details_table( $post_id ){
           case 'name':
           case 'package_name':
           case 'part_type':
+          case 'extended_product_families':
             // nothing, skip
             break;
 

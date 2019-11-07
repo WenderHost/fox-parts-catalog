@@ -401,6 +401,29 @@ function get_part_series( \WP_REST_Request $request ){
 
     set_transient( $transient_key , $response, HOUR_IN_SECONDS * 24 );
   }
+  foreach( $response->data as $key => $part_series ){
+    $response->data[$key]->extended_product_families = [];
+    if( 'Crystal' == $part_series->part_type ){
+      $args = [
+        'post_type'       => 'foxpart',
+        'posts_per_page'  => -1,
+        's'               => 'F' . $part_series->name,
+      ];
+      $foxparts = get_posts( $args );
+      if( $foxparts ){
+        foreach( $foxparts as $part ){
+          $part_obj = new \stdClass();
+          $part_obj->name = get_the_title( $part->ID );
+          $part_obj->tolerance = \FoxParts\utilities\map_part_attribute(['part_type' => 'crystal', 'attribute' => 'tolerance', 'value' => get_post_meta( $part->ID, 'tolerance', true )]);
+          $part_obj->stability = \FoxParts\utilities\map_part_attribute(['part_type' => 'crystal', 'attribute' => 'stability', 'value' => get_post_meta( $part->ID, 'stability', true )]);
+          $part_obj->optemp = \FoxParts\utilities\map_part_attribute(['part_type' => 'crystal', 'attribute' => 'optemp', 'value' => get_post_meta( $part->ID, 'optemp', true )]);
+          $part_obj->from_frequency = get_post_meta( $part->ID, 'from_frequency', true );
+          $part_obj->to_frequency = get_post_meta( $part->ID, 'to_frequency', true );
+          $response->data[$key]->extended_product_families[] = $part_obj;
+        }
+      }
+    }
+  }
 
   return $response;
 }
