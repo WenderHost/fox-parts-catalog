@@ -361,16 +361,29 @@ function get_part_series( \WP_REST_Request $request ){
     return new \WP_Error( 'missingconst', __('Please make sure `FOXELECTRONICS_SF_API_ROUTE` is defined in your `wp-config.php`') );
 
   $params = $request->get_params();
-  $part_series = $params['partnum'];
-  if( empty( $part_series ) )
+  $partnum = $params['partnum'];
+  if( empty( $partnum ) )
     return new \WP_Error( 'noproductfamily', __('No `partnum` provided.') );
 
   // Standardize our search string
-  $part_series = \FoxParts\utilities\standardize_search_string( $part_series, false );
-  if( ! $part_series )
+  $partnum = \FoxParts\utilities\standardize_search_string( $partnum, false );
+  if( ! $partnum )
     return new \WP_Error( 'invalidsearchstring', __('Your search string was invalid.') );
 
-  $query['family'] = $part_series; // Our SF API uses `family` as the query param
+  // Split the partnum into `part_series` and `frequency`
+  $partnum = \FoxParts\utilities\split_part_number( $partnum );
+  if( ! $partnum )
+    return new \WP_Error( 'cantsplitpartnum', __('I was unable to split the part number into `part_series` and `frequency`.') );
+
+  if( is_array( $partnum ) ){
+    $message = '';
+    foreach ($partnum as $key => $value) {
+      $message.= "\n" . '👉 $partnum[\'' . $key . '\'] = ' . $value;
+    }
+    foxparts_error_log('get_part_series() $partnum = ' . $message );
+  }
+
+  $query['family'] = $partnum['search']; // Our SF API uses `family` as the query param
 
   $access_token  = $_SESSION['SF_SESSION']->access_token;
   if( empty( $access_token ) )
@@ -380,7 +393,7 @@ function get_part_series( \WP_REST_Request $request ){
   if( empty( $instance_url ) )
     return new \WP_Error( 'noinstanceurl', __('No Instance URL provided.') );
 
-  $transient_key = 'fox_part_series_' . $part_series;
+  $transient_key = 'fox_part_series_' . $partnum['search'];
 
   if( false === ( $response = get_transient( $transient_key ) ) ){
     $request_url = trailingslashit( $instance_url ) . FOXELECTRONICS_SF_API_ROUTE . 'ProductFamily' . '?' . http_build_query( $query );
