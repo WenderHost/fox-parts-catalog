@@ -380,10 +380,10 @@ function get_part_series( \WP_REST_Request $request ){
     foreach ($partnum as $key => $value) {
       $message.= "\n" . '👉 $partnum[\'' . $key . '\'] = ' . $value;
     }
-    foxparts_error_log('get_part_series() $partnum = ' . $message );
+    //foxparts_error_log('get_part_series() $partnum = ' . $message );
   }
 
-  $query['family'] = $partnum['search']; // Our SF API uses `family` as the query param
+  $query['part'] = $partnum['search']; // Our SF API uses `part` as the query param
 
   $access_token  = $_SESSION['SF_SESSION']->access_token;
   if( empty( $access_token ) )
@@ -394,9 +394,10 @@ function get_part_series( \WP_REST_Request $request ){
     return new \WP_Error( 'noinstanceurl', __('No Instance URL provided.') );
 
   $transient_key = 'fox_part_series_' . $partnum['search'];
-
+  //\foxparts_error_log('$transient_key = ' . $transient_key );
   if( false === ( $response = get_transient( $transient_key ) ) ){
     $request_url = trailingslashit( $instance_url ) . FOXELECTRONICS_SF_API_ROUTE . 'ProductFamily' . '?' . http_build_query( $query );
+    //\foxparts_error_log( '📡 $request_url = ' . $request_url );
     $response = wp_remote_get( $request_url, [
       'method' => 'GET',
       'timeout' => 30,
@@ -414,16 +415,42 @@ function get_part_series( \WP_REST_Request $request ){
 
     set_transient( $transient_key , $response, HOUR_IN_SECONDS * 24 );
   }
+
+  if( empty( $response->data) ){
+    foxparts_error_log('🔔 No response data found...extended results will be unavailable! We need to create a Part Series so the following `foreach` can run:' );
+    //$PartSeries = new \stdClass();
+    $PartSeries = (object) ['width_mm', 'static_sensitive', 'reach_compliant', 'product_photo_part_image', 'part_type', 'packaging', 'package_name', 'output', 'name', 'moisture_sensitivity_level_msl', 'length_mm', 'individual_part_weight_grams', 'height_mm', 'export_control_classification_number', 'data_sheet_url', 'cage_code'];
+    /*
+    foreach( $partseries_props as $prop ){
+      $PartSeries->$$prop = '';
+    }
+    */
+    $response->data = $PartSeries;
+  }
+
+
   foreach( $response->data as $key => $part_series ){
     $response->data[$key]->extended_product_families = [];
-    if( 'Crystal' == $part_series->part_type ){
+
+    //foxparts_error_log('$response = ' . print_r( $response, true ) );
+    /**
+     * 11/25/2019 15:21 - Continue working here:
+     *
+     * When we searching on something beyond a part series, I need
+     * to search on whatever that string may be (e.g. `cabshh` ).
+     * Otherwise, we'll return too many results.
+     */
+    if( 'c' == $partnum['part_type'] ){
       $args = [
         'post_type'       => 'foxpart',
         'posts_per_page'  => -1,
-        's'               => 'F' . $part_series->name,
+        's'               => 'F' . $partnum['search'], // $part_series->name
       ];
+      //\foxparts_error_log('Extended results query vars: ' . print_r( $args, true ) );
       $foxparts = get_posts( $args );
+      //\foxparts_error_log('$foxparts = ' . print_r( $foxparts, true ) );
       if( $foxparts ){
+        \foxparts_error_log('We have some parts...');
         foreach( $foxparts as $part ){
           $part_obj = new \stdClass();
           $part_obj->name = get_the_title( $part->ID );
@@ -432,11 +459,20 @@ function get_part_series( \WP_REST_Request $request ){
           $part_obj->optemp = \FoxParts\utilities\map_part_attribute(['part_type' => 'crystal', 'attribute' => 'optemp', 'value' => get_post_meta( $part->ID, 'optemp', true )]);
           $part_obj->from_frequency = get_post_meta( $part->ID, 'from_frequency', true );
           $part_obj->to_frequency = get_post_meta( $part->ID, 'to_frequency', true );
-          $response->data[$key]->extended_product_families[] = $part_obj;
+
+          $split_part_obj_name = \FoxParts\utilities\split_part_number( $part_obj->name );
+          $match = \FoxParts\utilities\match_with_underscores( $split_part_obj_name['config'], $partnum['config'] );
+          if( $match ){
+            //\foxparts_error_log("We have a match!\n" . '🔔 $split_part_obj_name = ' . print_r( $split_part_obj_name, true ) . "\n" . '🔔 $partnum = ' . print_r( $partnum, true ) );
+            $response->data[$key]->extended_product_families[] = $part_obj;
+          }
+
+
         }
       }
+      //foxparts_error_log('$response = ' . print_r( $response, true ) );
     }
-  }
+  } // foreach( $response->data as $key => $part_series )
 
   return $response;
 }
