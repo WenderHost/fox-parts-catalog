@@ -12,7 +12,7 @@ add_filter( 'query_vars', __NAMESPACE__ . '\\add_query_vars' );
  * Add rewrite which contains the part frequency after the part slug/name
  */
 function add_rewrites(){
-  add_rewrite_tag( '%frequency%', '([0-9]+\.[0-9]+)' );
+  add_rewrite_tag( '%frequency%', '([0-9]+\.[0-9]+[\-]?[0-9]?)' ); // [0-9]+\.[0-9]+,
   add_rewrite_rule( 'foxpart/([0-9a-zA-Z_]+)/([0-9]+\.[0-9]+)/?', 'index.php?post_type=foxpart&name=$matches[1]&frequency=$matches[2]', 'top' );
 }
 add_action( 'init', __NAMESPACE__ . '\\add_rewrites', 10, 0 );
