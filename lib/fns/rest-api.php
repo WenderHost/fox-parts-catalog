@@ -1,6 +1,13 @@
 <?php
 namespace FoxParts\restapi;
 
+/**
+ * Initialize our REST API with these routes:
+ *
+ * - foxparts/v1/get_options
+ * - foxparts/v1/get_web_part (12/11/2019 (11:30) - this doesn't appear to be in use)
+ * - foxparts/v1/get_part_series
+ */
 function init_rest_api(){
 
   // Get available options for a given part configuration
@@ -360,6 +367,13 @@ function get_part_series( \WP_REST_Request $request ){
   if( ! defined( 'FOXELECTRONICS_SF_API_ROUTE' ) )
     return new \WP_Error( 'missingconst', __('Please make sure `FOXELECTRONICS_SF_API_ROUTE` is defined in your `wp-config.php`') );
 
+  $default_data = [
+    'product_photo_part_image' => '',
+    'name'            => '---',
+    'part_type'       => '---',
+    'details'         => '<h5 style="margin-bottom: .25rem;">No Results Found</h5><p>Your search did not yield any results. Please follow these guidelines:</p><ul><li>Part Number search only works with Fox\'s <a href="/support/partnumberformat/" target="_blank">new part number scheme</a>.</li><li>Old standards like <code>FOXSDLF/143-20</code> and Configured Part Numbers <code>e.g. 116-25-13</code> can not be searched.</li><li>Try shortening the Part Number.</li><li>If you know your product specifications, try <a href="' . FOXPC_FOXSELECT_URL . '">FoxSelect</a>.</li><li>Still having trouble? Send a <a href="/contact-us/">request for assistance</a>.</li></ul>',
+  ];
+
   $params = $request->get_params();
   $partnum = $params['partnum'];
   if( empty( $partnum ) )
@@ -367,21 +381,20 @@ function get_part_series( \WP_REST_Request $request ){
 
   // Standardize our search string
   $partnum = \FoxParts\utilities\standardize_search_string( $partnum, false );
-  if( ! $partnum )
-    return new \WP_Error( 'invalidsearchstring', __('Your search string was invalid.') );
+  // Don't throw an error if we have an `invalid` part number, return the `default_data` which contains help on searching:
+  if( ! $partnum ){
+    //return new \WP_Error( 'invalidsearchstring', __('Your search string was invalid.') );
+    $response = new \stdClass();
+    $response->data = [$default_data];
+    return $response;
+  }
+  //foxparts_error_log('🔔 $partnum = ' . $partnum );
 
   // Split the partnum into `part_series` and `frequency`
   $partnum = \FoxParts\utilities\split_part_number( $partnum );
   if( ! $partnum )
     return new \WP_Error( 'cantsplitpartnum', __('I was unable to split the part number into `part_series` and `frequency`.') );
-
-  if( is_array( $partnum ) ){
-    $message = '';
-    foreach ($partnum as $key => $value) {
-      $message.= "\n" . '👉 $partnum[\'' . $key . '\'] = ' . $value;
-    }
-    //foxparts_error_log('get_part_series() $partnum = ' . $message );
-  }
+  foxparts_error_log('🔔 $partnum = ' . print_r( $partnum, true ) );
 
   $query['part'] = $partnum['search']; // Our SF API uses `part` as the query param
 
@@ -393,7 +406,7 @@ function get_part_series( \WP_REST_Request $request ){
   if( empty( $instance_url ) )
     return new \WP_Error( 'noinstanceurl', __('No Instance URL provided.') );
 
-  $transient_key = 'fox_part_series_' . $partnum['search'];
+  $transient_key = 'fox_part_series_' . $partnum['search'] . $partnum['frequency'];
   //\foxparts_error_log('$transient_key = ' . $transient_key );
   if( false === ( $response = get_transient( $transient_key ) ) ){
     $request_url = trailingslashit( $instance_url ) . FOXELECTRONICS_SF_API_ROUTE . 'ProductFamily' . '?' . http_build_query( $query );
@@ -410,29 +423,30 @@ function get_part_series( \WP_REST_Request $request ){
     if( ! is_wp_error( $response ) ){
       $data = json_decode( wp_remote_retrieve_body( $response ) );
       $response = new \stdClass();
+      $data->part_series[0]->full_part_number = ( ! empty( $partnum['frequency'] ) )? true : false ;
+      //foxparts_error_log('$data->part_series = ' . print_r( $data->part_series, true));
       $response->data = $data->part_series;
+
     }
 
     set_transient( $transient_key , $response, HOUR_IN_SECONDS * 24 );
   }
 
-  if( empty( $response->data) ){
+  if( empty( $response->data ) ){
     foxparts_error_log('🔔 No response data found...extended results will be unavailable! We need to create a Part Series so the following `foreach` can run:' );
     //$PartSeries = new \stdClass();
-    $PartSeries = (object) ['width_mm', 'static_sensitive', 'reach_compliant', 'product_photo_part_image', 'part_type', 'packaging', 'package_name', 'output', 'name', 'moisture_sensitivity_level_msl', 'length_mm', 'individual_part_weight_grams', 'height_mm', 'export_control_classification_number', 'data_sheet_url', 'cage_code'];
+    $PartSeries = (object) ['width_mm' => null, 'static_sensitive' => null, 'reach_compliant' => null, 'product_photo_part_image' => null, 'part_type' => null, 'packaging' => null, 'package_name' => null, 'output' => null, 'name' => null, 'moisture_sensitivity_level_msl' => null, 'length_mm' => null, 'individual_part_weight_grams' => null, 'height_mm' => null, 'export_control_classification_number' => null, 'data_sheet_url' => null, 'cage_code' => null];
     /*
     foreach( $partseries_props as $prop ){
       $PartSeries->$$prop = '';
     }
     */
-    $response->data = $PartSeries;
+    $response->data[0] = $PartSeries;
   }
 
-
+  // Extended Product Families (12/13/2019 (07:36) - used for Crystals)
   foreach( $response->data as $key => $part_series ){
     $response->data[$key]->extended_product_families = [];
-
-    //foxparts_error_log('$response = ' . print_r( $response, true ) );
     /**
      * 11/25/2019 15:21 - Continue working here:
      *
@@ -446,9 +460,9 @@ function get_part_series( \WP_REST_Request $request ){
         'posts_per_page'  => -1,
         's'               => 'F' . $partnum['search'], // $part_series->name
       ];
-      //\foxparts_error_log('Extended results query vars: ' . print_r( $args, true ) );
+      \foxparts_error_log('Extended results query vars: ' . print_r( $args, true ) );
       $foxparts = get_posts( $args );
-      //\foxparts_error_log('$foxparts = ' . print_r( $foxparts, true ) );
+      \foxparts_error_log('$foxparts = ' . print_r( $foxparts, true ) );
       if( $foxparts ){
         \foxparts_error_log('We have some parts...');
         foreach( $foxparts as $part ){
