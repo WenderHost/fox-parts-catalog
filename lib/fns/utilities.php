@@ -335,11 +335,13 @@ function get_part_details_table( $post_id ){
                        * - https://regex101.com/r/lV0ExD/1/
                        * - https://stackoverflow.com/questions/24342026/in-php-how-to-get-float-value-from-a-mixed-string
                        */
+                      /*
                       if( stristr( $product->name, '-' ) )
                         continue; // Product names with `dashes` are custom products, we skip them
+                      /**/
 
                       $split_product_name = split_part_number( $product->name );
-                      //\foxparts_error_log( print_r( $split_product_name, true ) );
+                      \foxparts_error_log( print_r( $split_product_name, true ) );
                       /*
                       preg_match( '/(^.*?)([\d]+(?:\.[\d]+)+)$/', $product->name, $matches );
                       if( ! $matches )
@@ -747,7 +749,7 @@ function split_part_number( $partnum = null ){
   $part_number = [ 'part_series' => null, 'frequency' => null, 'config' => null, 'size_or_output' => null, 'part_type' => null ];
   // (F|f)?(?![f])([a-z]){1}([0-9a]{1}|[0-9]{3})?([a-z]+)?([0-9]+\.[0-9]+)?$
   // (?<company>F|f)?(?![f])(?<part_type>[a-z]){1}(?<size_or_output>[0-9a]{1}|[0-9]{3})?(?<config>[a-z]+)?(?<frequency>[0-9]+\.[0-9]+)?$
-  \preg_match( '/(?<company>F|f)?(?![f])(?<!_)(?<part_type>[a-z]){1}(?<size_or_output>[0-9a]{1}|[0-9]{3})?(?<config>[a-z_]+)?(?<frequency>[0-9]+\.[0-9]+)?$/i', $partnum, $matches );
+  \preg_match( '/(?<company>F|f)?(?![f])(?<!_)(?<part_type>[a-z]){1}(?<size_or_output>[0-9a]{1}|[0-9]{3})?(?<config>[a-z_]+)?(?<frequency>[0-9]+\.[0-9]+[\-]?[0-9]?)?$/i', $partnum, $matches );
   if( $matches && $partnum == $matches[0] ){
 
     foreach( $matches as $key => $value ){
