@@ -423,7 +423,7 @@ function get_part_series( \WP_REST_Request $request ){
     if( ! is_wp_error( $response ) ){
       $data = json_decode( wp_remote_retrieve_body( $response ) );
       $response = new \stdClass();
-      $data->part_series[0]->full_part_number = ( ! empty( $partnum['frequency'] ) )? true : false ;
+      //$data->part_series[0]->full_part_number = ( ! empty( $partnum['frequency'] ) )? true : false ;
       //foxparts_error_log('$data->part_series = ' . print_r( $data->part_series, true));
       $response->data = $data->part_series;
 
@@ -433,20 +433,23 @@ function get_part_series( \WP_REST_Request $request ){
   }
 
   if( empty( $response->data ) ){
-    foxparts_error_log('🔔 No response data found...extended results will be unavailable! We need to create a Part Series so the following `foreach` can run:' );
-    //$PartSeries = new \stdClass();
-    $PartSeries = (object) ['width_mm' => null, 'static_sensitive' => null, 'reach_compliant' => null, 'product_photo_part_image' => null, 'part_type' => null, 'packaging' => null, 'package_name' => null, 'output' => null, 'name' => null, 'moisture_sensitivity_level_msl' => null, 'length_mm' => null, 'individual_part_weight_grams' => null, 'height_mm' => null, 'export_control_classification_number' => null, 'data_sheet_url' => null, 'cage_code' => null];
-    /*
-    foreach( $partseries_props as $prop ){
-      $PartSeries->$$prop = '';
-    }
-    */
-    $response->data[0] = $PartSeries;
+    foxparts_error_log('🔔 No response data found...returning `No Part Found` response.' );
+    $response = new \stdClass();
+    $response->data = [$default_data];
+    return $response;
   }
+
+  $full_part_number = ( ! empty( $partnum['frequency'] ) )? true : false ;
+  $response->data[0]->full_part_number = ( ! empty( $partnum['frequency'] ) )? true : false ;
 
   // Extended Product Families (12/13/2019 (07:36) - used for Crystals)
   foreach( $response->data as $key => $part_series ){
     $response->data[$key]->extended_product_families = [];
+
+    // Add AEC-Q200 for Oscillators
+    if( 'o' == $partnum['part_type'] && 'ha' == substr( $partnum['config'], 0, 2) )
+      $response->data[$key]->output = 'HCMOS, AEC-Q200';
+
     /**
      * 11/25/2019 15:21 - Continue working here:
      *
