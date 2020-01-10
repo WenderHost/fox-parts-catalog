@@ -24,6 +24,22 @@ function add_enqueues(){
       $x++;
     }
   }
+  $scripts = glob( plugin_dir_path( __FILE__ ) . '../foxselect/static/js/runtime-main.*' );
+  $x = 0;
+  foreach( $scripts as $script ){
+    if( '.js' == substr( $script, -3 ) ){
+      wp_register_script( 'foxselect-runtime-' . $x, plugin_dir_url( __FILE__ ) . '../foxselect/static/js/' . basename( $script ), ['foxselect-loader'], null, true );
+      $x++;
+    }
+  }
+  $scripts = glob( plugin_dir_path( __FILE__ ) . '../foxselect/static/js/4.*' );
+  $x = 0;
+  foreach( $scripts as $script ){
+    if( '.js' == substr( $script, -3 ) ){
+      wp_register_script( 'foxselect-chunks-' . $x, plugin_dir_url( __FILE__ ) . '../foxselect/static/js/' . basename( $script ), ['foxselect-loader'], null, true );
+      $x++;
+    }
+  }
 
   // Register FOXSelect React App CSS
   $styles = glob( plugin_dir_path( __FILE__ ) . '../foxselect/static/css/main.*' );

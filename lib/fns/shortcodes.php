@@ -29,16 +29,40 @@ function foxselect( $atts ){
   wp_enqueue_style( 'foxselect-theme' );
 
   // Enqueue FOXSelect React App JS
+  $scripts = glob( plugin_dir_path( __FILE__ ) . '../foxselect/static/js/runtime-main.*' );
+  $x = 0;
+  $foxselect_last_script = 0;
+  foreach( $scripts as $script ){
+    if( '.js' == substr( $script, -3 ) ){
+      foxparts_error_log('🔔 enqueuing ' . basename( $script ) . '; $x = ' . $x );
+      wp_enqueue_script( 'foxselect-runtime-' . $x );
+      $foxselect_last_script = $x;
+      $x++;
+    }
+  }
+  $scripts = glob( plugin_dir_path( __FILE__ ) . '../foxselect/static/js/4.*' );
+  $x = 0;
+  $foxselect_last_script = 0;
+  foreach( $scripts as $script ){
+    if( '.js' == substr( $script, -3 ) ){
+      foxparts_error_log('🔔 enqueuing ' . basename( $script ) . '; $x = ' . $x );
+      wp_enqueue_script( 'foxselect-chunks-' . $x );
+      $foxselect_last_script = $x;
+      $x++;
+    }
+  }
   $scripts = glob( plugin_dir_path( __FILE__ ) . '../foxselect/static/js/main.*' );
   $x = 0;
   $foxselect_last_script = 0;
   foreach( $scripts as $script ){
     if( '.js' == substr( $script, -3 ) ){
+      foxparts_error_log('🔔 enqueuing ' . basename( $script ) . '; $x = ' . $x );
       wp_enqueue_script( 'foxselect-' . $x );
       $foxselect_last_script = $x;
       $x++;
     }
   }
+
   // Enqueue FOXSelect React App CSS
   $styles = glob( plugin_dir_path( __FILE__ ) . '../foxselect/static/css/main.*' );
   $y = 0;
