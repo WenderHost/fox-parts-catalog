@@ -324,7 +324,7 @@ function get_options( $data, $return = false ){
 
       $response->partOptions[$key] = ( $mapped_values = map_values_to_labels(['setting' => $key, 'values' => $$var, 'package_type' => $package_type, 'part_type' => $part_type, 'size' => $size ]) )? $mapped_values : $$var ;
   }
-  //error_log('['. basename(__FILE__) .', line '. __LINE__ .'] $response:' . print_r($response,true));
+  //foxparts_error_log('$response:' . print_r($response,true) );
 
   if( $return ){
     return $response;
@@ -447,8 +447,12 @@ function get_part_series( \WP_REST_Request $request ){
     $response->data[$key]->extended_product_families = [];
 
     // Add AEC-Q200 for Oscillators
-    if( 'o' == $partnum['part_type'] && 'ha' == substr( $partnum['config'], 0, 2) )
+    /*
+    if( 'o' == $partnum['part_type'] && 'ha' == substr( $partnum['config'], 0, 2) ){
+      foxparts_error_log('Adding AEC-Q200...');
       $response->data[$key]->output = 'HCMOS, AEC-Q200';
+    }
+    */
 
     /**
      * 11/25/2019 15:21 - Continue working here:
@@ -741,7 +745,7 @@ function map_values_to_labels( $atts ){
         'LD' => 'LVDS',
         'LS' => 'LVDS',
         'SL' => 'HCSL',
-        'HA' => 'AEC-Q200',
+        'HA' => 'HCMOS, AEC-Q200',
       ];
       break;
 
