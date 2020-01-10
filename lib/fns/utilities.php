@@ -243,20 +243,6 @@ function get_part_details_table( $post_id ){
         } else {
           $row['heading'] = get_key_label( $variable );
         }
-
-        /*
-        // 11/06/2019 (12:38) - Commented this out as it was creating duplicate rows, I don't think we need this anymore?
-        if( 0 < count( $details->product_family ) ){
-          foreach( $details->product_family as $product_family ){
-            if( stristr( $product_family->name, $sf_api_partnum ) ){
-              if( 0 < count( $product_family->product ) ){
-                $row['value'] = $product_family->product[0]->$variable;
-              }
-            }
-          }
-        }
-        /**/
-
         //$row['value'] = ( 'schedule_b_export_code' == $variable )? '<pre>$details = ' . print_r( $details, true) . '</pre>' : '...';
         break;
 
@@ -398,7 +384,7 @@ function get_part_details_table( $post_id ){
     $html.= '<tr>' . $header_col . '<td>' . $value . '</td></tr>';
   }
   $html.= '</table>';
-  if( is_user_logged_in() && current_user_can( 'edit_pages' ) )
+  if( is_user_logged_in() && current_user_can( 'edit_pages' ) && ( 0 < count($missing) ) )
     $html.= '<div class="alert alert-info" style="font-size: 14px;">The following rows had missing data and are not displayed in the table above: <ul><li>' . implode( '</li><li>', $missing ) . '</li></ul></div>';
 
   return $html;
@@ -502,51 +488,6 @@ function get_part_series_details( $atts ){
   return false;
 }
 
-/*
-// 10/04/2019 (09:56) - commented this out to see if it's being used anywhere, doesn't appear to be:
-function get_part_series( $partnum = null ){
-  if( is_null( $partnum ) )
-    return false;
-
-  $sf_api_request_url = get_site_url( null, 'wp-json/foxparts/v1/get_part_series?partnum=' . $partnum );
-  $sfRequest = \WP_REST_Request::from_url( $sf_api_request_url );
-  $sfResponse = \FoxParts\restapi\get_part_series( $sfRequest );
-
-  if( $sfResponse->data && 0 < count( $sfResponse->data->part_series ) ){
-    return $sfResponse->data->part_series;
-  } else {
-    return false;
-  }
-}
-/**/
-
-/*
-function get_part_series_details( $partnum = null, $frequency = null, $detail = null ){
-  $sf_api_request_url = get_site_url( null, 'wp-json/foxparts/v1/get_web_part?partnum=' . $partnum . $frequency );
-  $sfRequest = \WP_REST_Request::from_url( $sf_api_request_url );
-  $sfResponse = \FoxParts\restapi\get_web_part( $sfRequest );
-
-  $details = [];
-  if( $sfResponse->data ){ // && is_object( $sfResponse->data ) && 0 < count($sfResponse->data)
-    // Match to correct product series within the product family:
-    //error_log('count($sfResponse->data) = ' . count($sfResponse->data) );
-    foreach( $sfResponse->data as $key => $part_detail ){
-      //$details[] = ['heading' => $part_detail->label, 'value' => $part_detail->value ];
-      $details[$part_detail->label] = $part_detail->value;
-    }
-  }
-
-  if( ! is_null( $detail ) && array_key_exists( $detail, $details ) ){
-    return $details[$detail];
-  } else if( ! is_null( $detail ) && ! array_key_exists( $detail, $details ) ){
-    return false;
-  } else {
-    return $details;
-  }
-
-}
-/**/
-
 /**
  * Provided a Fox Part number returns the part series
  *
@@ -623,7 +564,7 @@ function map_part_attribute( $atts = [] ){
       break;
 
     case 'output':
-      $labels = [ 'A'  => 'Clipped Sine', 'C'  => 'Clipped Sine', 'G'  => 'Clipped Sine', 'H'  => 'HCMOS', 'S'  => 'HCMOS', 'HB' => 'HCMOS', 'HD' => 'HCMOS', 'HH' => 'HCMOS', 'HL' => 'HCMOS', 'HS' => 'HCMOS', 'HK' => 'HCMOS', 'PD' => 'LVPECL', 'PS' => 'LVPECL', 'PU' => 'LVPECL', 'LD' => 'LVDS', 'LS' => 'LVDS', 'SL' => 'HCSL', 'HA' => 'AEC-Q200' ];
+      $labels = [ 'A'  => 'Clipped Sine', 'C'  => 'Clipped Sine', 'G'  => 'Clipped Sine', 'H'  => 'HCMOS', 'S'  => 'HCMOS', 'HB' => 'HCMOS', 'HD' => 'HCMOS', 'HH' => 'HCMOS', 'HL' => 'HCMOS', 'HS' => 'HCMOS', 'HK' => 'HCMOS', 'PD' => 'LVPECL', 'PS' => 'LVPECL', 'PU' => 'LVPECL', 'LD' => 'LVDS', 'LS' => 'LVDS', 'SL' => 'HCSL', 'HA' => 'HCMOS, AEC-Q200' ];
       break;
 
     case 'package_option':
