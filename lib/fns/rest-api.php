@@ -381,6 +381,7 @@ function get_part_series( \WP_REST_Request $request ){
 
   // Standardize our search string
   $partnum = \FoxParts\utilities\standardize_search_string( $partnum, false );
+  foxparts_error_log('🔔 $partnum = ' . $partnum );
   // Don't throw an error if we have an `invalid` part number, return the `default_data` which contains help on searching:
   if( ! $partnum ){
     //return new \WP_Error( 'invalidsearchstring', __('Your search string was invalid.') );
@@ -388,7 +389,6 @@ function get_part_series( \WP_REST_Request $request ){
     $response->data = [$default_data];
     return $response;
   }
-  //foxparts_error_log('🔔 $partnum = ' . $partnum );
 
   // Split the partnum into `part_series` and `frequency`
   $partnum = \FoxParts\utilities\split_part_number( $partnum );

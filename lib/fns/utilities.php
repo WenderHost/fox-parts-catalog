@@ -700,6 +700,13 @@ function split_part_number( $partnum = null ){
     $part_number['fullsearch'] = $matches[0];
     $part_number['search'] = $part_number['part_type'] . $part_number['size_or_output'] . $part_number['config'];
   }
+  // remove dash from frequncy
+  if( stristr( $part_number['frequency'], '-' ) ){
+    $array = explode( '-', $part_number['frequency'] );
+    $no_dash_frequency = $array[0];
+    $part_number['fullsearch'] = str_replace( $part_number['frequency'], $no_dash_frequency, $part_number['fullsearch'] );
+    $part_number['frequency'] = $no_dash_frequency;
+  }
   //foxparts_error_log('$part_number = ' . print_r($part_number,true) );
   return $part_number;
 }
