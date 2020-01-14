@@ -34,7 +34,6 @@ function foxselect( $atts ){
   $foxselect_last_script = 0;
   foreach( $scripts as $script ){
     if( '.js' == substr( $script, -3 ) ){
-      foxparts_error_log('🔔 enqueuing ' . basename( $script ) . '; $x = ' . $x );
       wp_enqueue_script( 'foxselect-runtime-' . $x );
       $foxselect_last_script = $x;
       $x++;
@@ -45,7 +44,6 @@ function foxselect( $atts ){
   $foxselect_last_script = 0;
   foreach( $scripts as $script ){
     if( '.js' == substr( $script, -3 ) ){
-      foxparts_error_log('🔔 enqueuing ' . basename( $script ) . '; $x = ' . $x );
       wp_enqueue_script( 'foxselect-chunks-' . $x );
       $foxselect_last_script = $x;
       $x++;
@@ -56,7 +54,6 @@ function foxselect( $atts ){
   $foxselect_last_script = 0;
   foreach( $scripts as $script ){
     if( '.js' == substr( $script, -3 ) ){
-      foxparts_error_log('🔔 enqueuing ' . basename( $script ) . '; $x = ' . $x );
       wp_enqueue_script( 'foxselect-' . $x );
       $foxselect_last_script = $x;
       $x++;

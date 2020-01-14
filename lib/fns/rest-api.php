@@ -384,7 +384,6 @@ function get_part_series( \WP_REST_Request $request ){
   foxparts_error_log('🔔 $partnum = ' . $partnum );
   // Don't throw an error if we have an `invalid` part number, return the `default_data` which contains help on searching:
   if( ! $partnum ){
-    //return new \WP_Error( 'invalidsearchstring', __('Your search string was invalid.') );
     $response = new \stdClass();
     $response->data = [$default_data];
     return $response;
@@ -407,10 +406,12 @@ function get_part_series( \WP_REST_Request $request ){
     return new \WP_Error( 'noinstanceurl', __('No Instance URL provided.') );
 
   $transient_key = 'fox_part_series_' . $partnum['search'] . $partnum['frequency'];
-  //\foxparts_error_log('$transient_key = ' . $transient_key );
-  if( false === ( $response = get_transient( $transient_key ) ) ){
+  if( false === ( $response = get_transient( $transient_key ) ) || WP_DEBUG ){
     $request_url = trailingslashit( $instance_url ) . FOXELECTRONICS_SF_API_ROUTE . 'ProductFamily' . '?' . http_build_query( $query );
-    //\foxparts_error_log( '📡 $request_url = ' . $request_url );
+
+    if( WP_DEBUG )
+      foxparts_error_log('🚨 WP_DEBUG is ON. Not using a transient. Calling API: ' . $request_url );
+
     $response = wp_remote_get( $request_url, [
       'method' => 'GET',
       'timeout' => 30,
@@ -419,6 +420,7 @@ function get_part_series( \WP_REST_Request $request ){
         'Authorization' => 'Bearer ' . $access_token,
       ],
     ]);
+    //foxparts_error_log('🔔 $response = ' . print_r( $response, true ) );
 
     if( ! is_wp_error( $response ) ){
       $data = json_decode( wp_remote_retrieve_body( $response ) );
@@ -426,17 +428,50 @@ function get_part_series( \WP_REST_Request $request ){
       //$data->part_series[0]->full_part_number = ( ! empty( $partnum['frequency'] ) )? true : false ;
       //foxparts_error_log('$data->part_series = ' . print_r( $data->part_series, true));
       $response->data = $data->part_series;
-
     }
 
     set_transient( $transient_key , $response, HOUR_IN_SECONDS * 24 );
   }
 
-  if( empty( $response->data ) ){
+  if( empty( $response->data ) && 'c' != $partnum['part_type'] ){
     foxparts_error_log('🔔 No response data found...returning `No Part Found` response.' );
     $response = new \stdClass();
     $response->data = [$default_data];
     return $response;
+  } else if( empty( $response->data ) && 'c' == $partnum['part_type'] ){
+    /**
+     * ALLOW FOR SEARCHING ON CRYSTALS W/ A FULL PART NO.
+     *
+     * For Crystals, we must "fake" a response from SalesForce because
+     * searching on something like `FC3BSHH_G` or even `FC3BSHHCG`
+     * doesn't return a result, but we have valuable data on this part
+     * in the WordPress database. So we build out an object to add to
+     * the $response as if we'd received something from SalesForce.
+     * However, when we do it this way, the following part attributes
+     * are missing since they come from SalesForce:
+     *
+     * - Weight
+     * - ECCN
+     * - Cage Code
+     */
+    $part_series = strtoupper( $partnum['part_type'] . $partnum['size_or_output'] . substr( $partnum['config'], 0, 2 ) );
+    $data = new \stdClass();
+    $data->name = $part_series;
+    $data->part_type = 'Crystal';
+
+    // Build out the size value
+    $size = \FoxParts\utilities\map_part_attribute(['part_type' => 'c', 'value' => $partnum['size_or_output'], 'attribute' => 'size' ]);
+    if( $size ){
+      $size = str_replace( ' mm', '', $size );
+      $size_array = explode( 'x', $size );
+      $data->length_mm = number_format( $size_array[0], 2 );
+      $data->width_mm = number_format( $size_array[1], 2 );
+    } else {
+      $data->length_mm = '...';
+      $data->width_mm = '...';
+    }
+
+    $response->data[0] = $data;
   }
 
   $full_part_number = ( ! empty( $partnum['frequency'] ) )? true : false ;
@@ -467,9 +502,9 @@ function get_part_series( \WP_REST_Request $request ){
         'posts_per_page'  => -1,
         's'               => 'F' . $partnum['search'], // $part_series->name
       ];
-      \foxparts_error_log('Extended results query vars: ' . print_r( $args, true ) );
+      //foxparts_error_log('Extended results query vars: ' . print_r( $args, true ) );
       $foxparts = get_posts( $args );
-      \foxparts_error_log('$foxparts = ' . print_r( $foxparts, true ) );
+      //foxparts_error_log('$foxparts = ' . print_r( $foxparts, true ) );
       if( $foxparts ){
         \foxparts_error_log('We have some parts...');
         foreach( $foxparts as $part ){
@@ -491,7 +526,7 @@ function get_part_series( \WP_REST_Request $request ){
 
         }
       }
-      //foxparts_error_log('$response = ' . print_r( $response, true ) );
+      foxparts_error_log('$response = ' . print_r( $response, true ) );
     }
   } // foreach( $response->data as $key => $part_series )
 
