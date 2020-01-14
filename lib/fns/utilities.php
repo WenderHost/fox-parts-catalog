@@ -700,12 +700,22 @@ function split_part_number( $partnum = null ){
     $part_number['fullsearch'] = $matches[0];
     $part_number['search'] = $part_number['part_type'] . $part_number['size_or_output'] . $part_number['config'];
   }
-  // remove dash from frequncy
+
+  // remove dash from frequency
   if( stristr( $part_number['frequency'], '-' ) ){
     $array = explode( '-', $part_number['frequency'] );
     $no_dash_frequency = $array[0];
     $part_number['fullsearch'] = str_replace( $part_number['frequency'], $no_dash_frequency, $part_number['fullsearch'] );
     $part_number['frequency'] = $no_dash_frequency;
+  }
+
+  // Remove load value from Crystals
+  if( 'c' == $part_number['part_type'] && 5 <= strlen( $part_number['config'] ) ){
+    $config_array = str_split( $part_number['config'] );
+    $part_number['load'] = $config_array[4];
+    $config_array[4] = '_';
+    $search = $part_number['part_type'] . $part_number['size_or_output'] . implode('', $config_array );
+    $part_number['search'] = $search;
   }
   //foxparts_error_log('$part_number = ' . print_r($part_number,true) );
   return $part_number;
