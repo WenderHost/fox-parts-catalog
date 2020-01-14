@@ -642,8 +642,8 @@ function map_values_to_labels( $atts ){
     'size'                  => null,
   ], $atts );
 
-  if( 'pin_1' == $args['setting'] )
-    \foxparts_error_log('map_values_to_labels('.print_r($args,true).')');
+  if( 'package_option' == $args['setting'] )
+    \foxparts_error_log('🔔🔔🔔 map_values_to_labels('.print_r($args,true).')');
 
   if( 0 == count( $args['values'] ) || ! is_array( $args['values'] ) )
     return false;
@@ -723,6 +723,14 @@ function map_values_to_labels( $atts ){
         'T' => 'TCXO/VC-TCXO',
         'Y' => 'VCXO',
         'S' => 'SSO',
+      ];
+      break;
+
+    case 'package_option':
+      $labels = [
+        'BS' => '0.7mm height, metal lid, seam seal',
+        'BG' => '1.0mm height, ceramic lid, glass seal',
+        'BQ' => '1.1mm height, metal lid, resin seal',
       ];
       break;
 
@@ -971,6 +979,9 @@ function map_values_to_labels( $atts ){
   usort( $mapped_values, function( $a, $b ){
     return strnatcmp( $a['label'], $b['label'] );
   });
+
+  if( 'package_option' == $args['setting'] )
+    foxparts_error_log('⚡️ mapped values = ' . print_r( $mapped_values, true ) );
 
   return $mapped_values;
 }
