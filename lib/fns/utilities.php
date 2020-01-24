@@ -683,14 +683,11 @@ function standardize_search_string( $s = null, $for_wp = true ){
  * @return     array|boolean  Returns an array with keys part_series and frequency. `False` if $partnum is null.
  */
 function split_part_number( $partnum = null ){
-  //foxparts_error_log('Running split_part_number... $partnum = ' . $partnum );
   if( is_null( $partnum ) )
     return false;
 
-  $part_number = [ 'part_series' => null, 'frequency' => null, 'config' => null, 'size_or_output' => null, 'part_type' => null ];
-  // (F|f)?(?![f])([a-z]){1}([0-9a]{1}|[0-9]{3})?([a-z]+)?([0-9]+\.[0-9]+)?$
-  // (?<company>F|f)?(?![f])(?<part_type>[a-z]){1}(?<size_or_output>[0-9a]{1}|[0-9]{3})?(?<config>[a-z]+)?(?<frequency>[0-9]+\.[0-9]+)?$
-  \preg_match( '/(?<company>F|f)?(?![f])(?<!_)(?<part_type>[a-z]){1}(?<size_or_output>[0-9a]{1}|[0-9]{3})?(?<config>[a-z_]+)?(?<frequency>[0-9]+\.[0-9]+[\-]?[0-9]?)?$/i', $partnum, $matches );
+  $part_number = [ 'part_series' => null, 'frequency' => null, 'config' => null, 'size_or_output' => null, 'part_type' => null, 'packaging' => null ];
+  \preg_match( '/(?<company>F|f)?(?![f])(?<!_)(?<part_type>[a-z]){1}(?<size_or_output>[0-9a]{1}|[0-9]{3})?(?<config>[a-z_]+)?(?<frequency>[0-9]+\.[0-9]+)?(?<packaging>-{1}[a-z0-9]*)?$/i', $partnum, $matches );
   if( $matches && $partnum == $matches[0] ){
 
     foreach( $matches as $key => $value ){
