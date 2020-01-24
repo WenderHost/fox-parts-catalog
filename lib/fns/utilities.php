@@ -109,7 +109,7 @@ function get_part_details_table( $post_id ){
     'package_type' => $package_type,
     'frequency_unit' => 'mhz'
   ];
-  //\foxparts_error_log('$data = ' . print_r( $data, true ) );
+  \foxparts_error_log('$data = ' . print_r( $data, true ) );
   $response = \FoxParts\restapi\get_options( $data, true );
 
   if( isset( $response->configuredPart ) && 0 < $response->availableParts ){
@@ -123,7 +123,7 @@ function get_part_details_table( $post_id ){
 
   $table_row_maps = [
     'c' => ['product_type','size','frequency','tolerance','stability','load','optemp'],
-    'o' => ['product_type','size','frequency','voltage','stability','optemp','output'],
+    'o' => ['product_type','size','output','frequency','voltage','stability','optemp'],
     't' => ['product_type','size','frequency','output','voltage','stability','optemp'],
     'y' => ['product_type','size','frequency','output','voltage','stability','optemp'],
   ];
@@ -133,7 +133,7 @@ function get_part_details_table( $post_id ){
     return '<div class="alert alert-warn">No table row map found for Product Type "' . $configuredPart['product_type']['label'] . '".</div>';
 
   $row_map = $table_row_maps[ strtolower( $configuredPart['product_type']['value'] ) ];
-  $common_rows = ['circuit_condition','length_mm','width_mm','height_mm','packaging','country_of_origin','individual_part_weight_grams','part_life_cycle_status','reach_compliant','rohs_compliant','static_sensitive','moisture_sensitivity_level_msl','cage_code','export_control_classification_number','hts_code','schedule_b_export_code'];
+  $common_rows = ['length_mm','width_mm','height_mm','packaging','country_of_origin','individual_part_weight_grams','part_life_cycle_status','reach_compliant','rohs_compliant','static_sensitive','moisture_sensitivity_level_msl','cage_code','export_control_classification_number','hts_code','schedule_b_export_code'];
   $row_map = array_merge( $row_map, $common_rows );
 
   //$details = ( $frequency )? get_part_series_details( $partnum, $frequency ) : get_product_family_details( $partnum ) ;
@@ -144,8 +144,6 @@ function get_part_details_table( $post_id ){
   }
 
   $rows = [];
-  //$rows[] = ['heading' => 'ConfiguredPart','value' => '<pre>' . print_r($configuredPart,true) . '</pre>' . '; $row_map = <pre>' . print_r($row_map,true) . '</pre>'];
-  //$rows[] = [ 'heading' => 'Details', 'value' => '<pre>'. print_r($details,true).'</pre>' ];
 
   // Part Number
   if( $frequency && '0.0' != $frequency )
@@ -163,7 +161,7 @@ function get_part_details_table( $post_id ){
       $details->part_life_cycle_status = $product_family->part_life_cycle_status;
 
       if( 0 < count( $product_family->product ) ){
-        \foxparts_error_log('$partnum = ' . $partnum . "\n" . '$product_family->product[0] = ' . print_r( $product_family->product[0], true ));
+        //\foxparts_error_log('$partnum = ' . $partnum . "\n" . '$product_family->product[0] = ' . print_r( $product_family->product[0], true ));
         //$details->country_of_origin = $product_family->product[0]->country_of_origin;
         //$details->hts_code = $product_family->product[0]->hts_code;
         //$details->schedule_b_export_code = $product_family->product[0]->schedule_b_export_code;
@@ -178,7 +176,7 @@ function get_part_details_table( $post_id ){
           //\foxparts_error_log( '$split_product_name = ' . print_r( $split_product_name, true ) );
 
           if( match_with_underscores( $split_partnum['config'], $split_product_name['config'] ) ){
-            \foxparts_error_log('WE have a match! ' . "\n" . '👉 $split_partnum[\'config\'] = ' . $split_partnum['config'] . "\n" . '👉 $split_product_name[\'config\'] = ' . $split_product_name['config'] . "\n" . '👉 $product = ' . print_r( $product, true ) );
+            //\foxparts_error_log('WE have a match! ' . "\n" . '👉 $split_partnum[\'config\'] = ' . $split_partnum['config'] . "\n" . '👉 $split_product_name[\'config\'] = ' . $split_product_name['config'] . "\n" . '👉 $product = ' . print_r( $product, true ) );
             $details->country_of_origin = $product->country_of_origin;
             $details->hts_code = $product->hts_code;
             $details->schedule_b_export_code = $product->schedule_b_export_code;
@@ -188,24 +186,28 @@ function get_part_details_table( $post_id ){
             $rows[] = [ 'heading' => 'Part Series', 'value' => $details->name ];
             break;
           }
-          /*
-          if( $partnum . $frequency == $product->name ){
-            $rows[] = [ 'heading' => 'Description', 'value' => $product->description ];
-            $rows[] = [ 'heading' => 'Part Series', 'value' => $details->name ];
-            //$rows[] = [ 'heading' => 'Harminized Tariff', 'value' => $product->hts_code ];
-          }
-          */
         }
       }
     }
   }
 
   $missing = [];
+  $load_part_codes = ['4pF' => 'C', '6pF' => 'B', '7pF' => 'V', '8pF' => 'D', '9pF' => 'W', '10pF' => 'E', '12pF' => 'G', '12.5pF' => 'H', '13pF' => 'U', '14pF' => 'X', '15pF' => 'J', '16pF' => 'K', '18pF' => 'L', '19pF' => 'Y', '20pF' => 'M', '22pF' => 'N', '27pF' => 'P', '30pF' => 'Q', '32pF' => 'R', '33pF' => 'S', '50pF' => 'T'];
   foreach ( $row_map as $variable ) {
     $row = [];
     switch( $variable ){
       case 'frequency':
         $row = [ 'heading' => 'Frequency', 'value' => $frequency . 'MHz' ];
+        break;
+
+      case 'load':
+        if( 'c' == strtolower( $configuredPart['product_type']['value'] ) || 'k' == strtolower( $configuredPart['product_type']['value'] ) ){
+          $row['heading'] = 'Load Capacitance (pF)';
+          if( isset( $details->circuit_condition ) ){
+            $row['value'] = $details->circuit_condition;
+            $row['part_code'] = $load_part_codes[$details->circuit_condition];
+          }
+        }
         break;
 
       case 'optemp':
@@ -215,7 +217,7 @@ function get_part_details_table( $post_id ){
       case 'product_type':
         $row['heading'] = 'Part Type';
         $frequency_display = ( $frequency && '0.0' != $frequency )? $frequency : $from_frequency . '-' . $to_frequency ;
-        $package_type_labels = ['smd' => 'SMD', 'pin-thru' => 'Pin-Thru'];
+        $package_type_labels = ['smd' => 'SMD', 'pin-thru' => 'Pin-Thru', 'vibration resistant' => 'Vibration Resistant'];
         $row['value'] = $configuredPart['product_type']['label'] . ' ' . $frequency_display . $configuredPart['frequency_unit']['label'] . ' - ' . $package_type_labels[ strtolower( $configuredPart['package_type']['label'] ) ];
         $row['part_code'] = $configuredPart['product_type']['value'];
         break;
@@ -249,6 +251,8 @@ function get_part_details_table( $post_id ){
       default:
         $row['heading'] = get_key_label( $variable );
     }
+    //if( stristr( strtolower( $row['heading'] ), 'load' ) )
+      //foxparts_error_log('$variable = ' . $variable . "\n" .'$row = ' . print_r( $row, true ) );
 
     if( ! isset( $row['value'] ) && isset( $configuredPart[$variable] ) && '_' != $configuredPart[$variable]['value'] ){
       $row['value'] = $configuredPart[$variable]['label'];
@@ -256,16 +260,20 @@ function get_part_details_table( $post_id ){
     } else if( ! isset( $row['value'] ) && isset( $details->$variable ) ) {
       $row['value'] = $details->$variable;
 
-      $load_part_codes = ['4pF' => 'C', '6pF' => 'B', '7pF' => 'V', '8pF' => 'D', '9pF' => 'W', '10pF' => 'E', '12pF' => 'G', '12.5pF' => 'H', '13pF' => 'U', '14pF' => 'X', '15pF' => 'J', '16pF' => 'K', '18pF' => 'L', '19pF' => 'Y', '20pF' => 'M', '22pF' => 'N', '27pF' => 'P', '30pF' => 'Q', '32pF' => 'R', '33pF' => 'S', '50pF' => 'T'];
-      if( 'circuit_condition' == $variable && array_key_exists( $details->$variable, $load_part_codes ) ){
-        //\foxparts_error_log( '👉 $details->' . $variable . ' = ' . $details->$variable );
+      if( 'circuit_condition' == $variable && array_key_exists( $details->$variable, $load_part_codes ) )
         $row['part_code'] = $load_part_codes[$details->$variable];
-      }
 
       unset( $details->$variable );
     } else if( array_key_exists( $variable, $configuredPart ) && '_' == $configuredPart[$variable]['value'] ) {
       // Skip attributes without a value (i.e. `_`).
-      continue;
+      /*
+      if( ! isset( $row['value'] ) ){
+        foxparts_error_log('🚨🚨🚨🚨 Skipping ' . $row['heading'] );
+        continue;
+      }
+      /**/
+      $row['value'] = '';
+      $row['part_code'] = '_';
     }
 
     // Font Awesome Icons for Y/N
@@ -290,6 +298,7 @@ function get_part_details_table( $post_id ){
 
     $rows[] = $row;
   }
+  //foxparts_error_log('$rows = ' . print_r( $rows, true ) );
 
   //*
   if( $details ){
@@ -327,7 +336,7 @@ function get_part_details_table( $post_id ){
                       /**/
 
                       $split_product_name = split_part_number( $product->name );
-                      \foxparts_error_log( print_r( $split_product_name, true ) );
+                      //\foxparts_error_log( print_r( $split_product_name, true ) );
                       /*
                       preg_match( '/(^.*?)([\d]+(?:\.[\d]+)+)$/', $product->name, $matches );
                       if( ! $matches )
@@ -351,6 +360,7 @@ function get_part_details_table( $post_id ){
             }
             break;
 
+          case 'circuit_condition':
           case 'data_sheet_url':
           case 'product_photo_part_image';
           case 'standard_lead_time_weeks':
@@ -556,6 +566,7 @@ function map_part_attribute( $atts = [] ){
     'size'          => null,
   ], $atts );
   //echo '<pre>$args = '.print_r($args,true).'</pre>';
+  //foxparts_error_log( '🔔 $atts = ' . print_r( $atts, true ) );
   $lc_attribute = strtolower( $args['attribute'] );
 
   switch( $lc_attribute ){
@@ -568,7 +579,7 @@ function map_part_attribute( $atts = [] ){
       break;
 
     case 'package_option':
-      $labels = ['AS' => 'SMD', 'AQ' => 'SMD', 'BA' => 'SMD', 'BS' => 'SMD', 'ST' => 'Pin-Thru', 'UT' => 'Pin-Thru', '0T' => 'Pin-Thru', '15' => 'Pin-Thru', '26' => 'Pin-Thru', '38' => 'Pin-Thru'];
+      $labels = ['AS' => 'SMD', 'AQ' => 'SMD', 'BA' => 'SMD', 'BS' => 'SMD', 'ST' => 'Pin-Thru', 'UT' => 'Pin-Thru', '0T' => 'Pin-Thru', '15' => 'Pin-Thru', '26' => 'Pin-Thru', '38' => 'Pin-Thru', 'VR' => 'Vibration Resistant'];
       break;
 
     case 'pin_1':
