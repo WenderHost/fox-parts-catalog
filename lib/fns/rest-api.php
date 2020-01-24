@@ -526,7 +526,7 @@ function get_part_series( \WP_REST_Request $request ){
 
         }
       }
-      foxparts_error_log('$response = ' . print_r( $response, true ) );
+      //foxparts_error_log('$response = ' . print_r( $response, true ) );
     }
   } // foreach( $response->data as $key => $part_series )
 
@@ -677,8 +677,8 @@ function map_values_to_labels( $atts ){
     'size'                  => null,
   ], $atts );
 
-  if( 'package_option' == $args['setting'] )
-    \foxparts_error_log('🔔🔔🔔 map_values_to_labels('.print_r($args,true).')');
+  //if( 'package_option' == $args['setting'] )
+    //\foxparts_error_log('🔔🔔🔔 map_values_to_labels('.print_r($args,true).')');
 
   if( 0 == count( $args['values'] ) || ! is_array( $args['values'] ) )
     return false;
@@ -766,6 +766,7 @@ function map_values_to_labels( $atts ){
         'BS' => '0.7mm height, metal lid, seam seal',
         'BG' => '1.0mm height, ceramic lid, glass seal',
         'BQ' => '1.1mm height, metal lid, resin seal',
+        'VR' => 'Vibration Resistant',
       ];
       break;
 
@@ -1015,8 +1016,8 @@ function map_values_to_labels( $atts ){
     return strnatcmp( $a['label'], $b['label'] );
   });
 
-  if( 'package_option' == $args['setting'] )
-    foxparts_error_log('⚡️ mapped values = ' . print_r( $mapped_values, true ) );
+  //if( 'package_option' == $args['setting'] )
+    //foxparts_error_log('⚡️ mapped values = ' . print_r( $mapped_values, true ) );
 
   return $mapped_values;
 }
