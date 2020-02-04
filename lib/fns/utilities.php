@@ -528,7 +528,7 @@ function get_part_series_from_partnum( $partnum = '' ){
  * @return     string  The label.
  */
 function get_key_label( $key ){
-  $keys_and_labels = ['export_control_classification_number' => 'Export Control','hts_code' => 'Harminized Tariff', 'individual_part_weight_grams' => 'Individual Part Weight', 'moisture_sensitivity_level_msl' => 'Moisture Sensitivity Level (MSL)', 'packaging' => 'Packaging Method', 'part_life_cycle_status' => 'Life Cycle Status', 'reach_compliant' => 'REACH Compliant', 'rohs_compliant' => 'RoHS Compliant','schedule_b_export_code' => 'Code Schedule B', 'static_sensitive' => 'Static Sensitive'];
+  $keys_and_labels = ['export_control_classification_number' => 'Export Control','hts_code' => 'Harminized Tariff', 'individual_part_weight_grams' => 'Individual Part Weight (g)', 'moisture_sensitivity_level_msl' => 'Moisture Sensitivity Level (MSL)', 'packaging' => 'Packaging Method', 'part_life_cycle_status' => 'Life Cycle Status', 'reach_compliant' => 'REACH Compliant', 'rohs_compliant' => 'RoHS Compliant','schedule_b_export_code' => 'Code Schedule B', 'static_sensitive' => 'Static Sensitive'];
   if( array_key_exists($key, $keys_and_labels ) )
     return $keys_and_labels[$key];
 
