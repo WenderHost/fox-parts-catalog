@@ -74,6 +74,8 @@ add_action( 'typerocket_loaded', function(){
 
       case 'crystal-khz':
         $size_options = [
+          '1.2x1.0 mm (2 pad)' => '121',
+          '1.2x1.0 mm (4 pad)' => '124',
           '1.6x1.0 mm' => '161',
           '2.0x1.2 mm' => '122',
           '2.0x1.2 mm (AEC-Q200)' => '12A',

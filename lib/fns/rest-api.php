@@ -817,6 +817,8 @@ function map_values_to_labels( $atts ){
         ];
       } else if( 'K' == $args['part_type'] || 'K' == $args['product_type'] ) {
         $labels = [
+          '121' => '1.2x1.0 mm', /* FK121 2 pad */
+          '124' => '1.2x1.0 mm', /* FK124 4 pad */
           '161' => '1.6x1.0 mm',
           '122' => '2.0x1.2 mm',
           '12A' => '2.0x1.2 mm', /* (AEC-Q200) */
@@ -1016,8 +1018,8 @@ function map_values_to_labels( $atts ){
     return strnatcmp( $a['label'], $b['label'] );
   });
 
-  //if( 'package_option' == $args['setting'] )
-    //foxparts_error_log('⚡️ mapped values = ' . print_r( $mapped_values, true ) );
+  //if( 'size' == $args['setting'] )
+    //wp_die('⚡️ mapped values = <pre>' . print_r( $mapped_values, true ) . '</pre>' );
 
   return $mapped_values;
 }
