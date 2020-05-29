@@ -8,7 +8,7 @@
  * Author URI:        https://mwender.com
  * Text Domain:       fox-electronics
  * Domain Path:       /languages
- * Version:           1.0.0
+ * Version:           1.1.0
  *
  * @package         Proposal_Manager
  */

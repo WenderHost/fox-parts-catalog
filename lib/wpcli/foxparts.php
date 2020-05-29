@@ -28,6 +28,13 @@ class Fox_Parts_CLI extends WP_CLI_Command{
      * including multiple header rows. Use a new header row
      * for each part type.
      *
+     * IMPORTANT: This import assumes that your CSV contains
+     * the complete set for any Part Series/Families. Your
+     * CSV can contain multiple Part Series, but each series
+     * should be the complete set for that series (a part
+     * series is the first four characters of a Fox Part
+     * Number e.g. C0ST, K121, C4ST, etc).
+     *
      * Example:
      *
      * part_type,size,from_frequency,to_frequency,tolerance,stability,optemp
