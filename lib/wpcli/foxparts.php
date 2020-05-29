@@ -7,6 +7,14 @@ if( ! class_exists( 'WP_CLI' ) )
  */
 class Fox_Parts_CLI extends WP_CLI_Command{
     var $imported = 0;
+    var $part_names = []; // Part names found in the CSV
+    var $csv_rows = [];
+    var $delete_part_series = false;
+
+    var $current_part_series_name = ''; // The current part series we're importing.
+    //var $current_part_series = []; // An array of all of our current part series parts in the DB.
+    var $current_part_series_count = 0; // Total # of parts in the DB in the part series we're currently processing.
+    var $part_series_report_rows = [];
 
     /**
      * Imports a CSV of parts
@@ -36,11 +44,11 @@ class Fox_Parts_CLI extends WP_CLI_Command{
      * C,4,ST,3.2,80,F,B,D
      *
      * [--delete]
-     * : Delete existing parts of the type we're importing. NOTE: If you don't use this flag, we'll skip the part if it already exists.
+     * : **Deprecated** Delete existing parts of the type we're importing. NOTE: If you don't use this flag, we'll skip the part if it already exists.
      *
      * ## EXAMPLES
      *
-     *  wp foxparts import parts.csv --delete
+     *  wp foxparts import parts.csv
      *
      *  @when typerocket_loaded
      */
@@ -56,11 +64,10 @@ class Fox_Parts_CLI extends WP_CLI_Command{
         if( ( $handle = fopen( $file, 'r' ) ) == FALSE )
             WP_CLI::error( 'Unable to open your CSV file.' );
 
-        // Are we deleting existing parts?
-        $delete = ( array_key_exists( 'delete', $assoc_args ) )? true : false;
+        // Are we deleting existing part series?
+        //$this->delete_part_series = ( array_key_exists( 'delete', $assoc_args ) )? true : false;
 
         $row = 1;
-        $table_rows = [];
         $current_part_type_slug = '';
         while( ( $data = fgetcsv( $handle, 1000, ',' ) ) !== FALSE  ){
             if( 'part_type' == $data[0] ){
@@ -78,24 +85,53 @@ class Fox_Parts_CLI extends WP_CLI_Command{
             $part_type_slug = $this->get_part_type_slug( $table_row['part_type'] );
 
             $part_name = $this->get_part_name( $part_type_slug, $table_row );
+
+            // Set our current part series
+            $part_series = $this->_get_part_series( $part_name );
+            if( $part_series != $this->current_part_series_name ){
+              $this->_set_current_part_series( $part_series );
+            }
+
             $table_row['name'] = $part_name;
             $table_row['part_type_slug'] = $part_type_slug;
 
-            if( $delete && $current_part_type_slug != $part_type_slug ){
-              $this->delete_parts_by_type( $part_type_slug );
-              $current_part_type_slug = $part_type_slug;
-            }
+            $created = ( $part_created )? '✅' : '⛔︎' ;
+            $exists = ( $part_exists )? '✅' : '⛔︎' ;
+            $this->csv_rows[$part_name] = [
+              'row'         => $row - 1,
+              'part_series' => $part_series,
+              'part'        => $part_name,
+              'part_data'   => $table_row,
+            ];
 
-            $this->create_part( $table_row );
-
-            $table_rows[$row] = $table_row;
             $row++;
         }
         fclose( $handle );
-        if( 0 < $this->imported ){
-          WP_CLI::success( $this->imported . ' parts imported.' );
+        $this->_save_part_series_report_row();
+
+        // Run the import
+        $part_series_report = $this->part_series_report_rows;
+        foreach( $part_series_report as $report_row ){
+          // Remove existing Part Series from the database:
+          $this->_delete_part_series( $report_row['part_series'] );
+
+          // Import the parts from the CSV:
+          $progress_message = '✅ Creating ' . $report_row['total_in_csv'] . ' parts in `' . $report_row['part_series'] . '` Part Series:';
+          $progress = \WP_CLI\Utils\make_progress_bar( $progress_message, $report_row['total_in_csv'] );
+          foreach( $this->csv_rows as $row ){
+            if( $report_row['part_series'] == $row['part_series'] ){
+              $this->create_part( $row['part_data'] );
+              $progress->tick();
+            }
+          }
+          $progress->finish();
         }
+
+        if( 0 < $this->imported )
+          WP_CLI::success( $this->imported . ' parts created/imported.' );
+        $this->part_series_report();
     }
+
 
     /**
      * Creates a part.
@@ -105,10 +141,9 @@ class Fox_Parts_CLI extends WP_CLI_Command{
      * @return     int  Post ID of the new part.
      */
     private function create_part( $part_array ){
-      $part_exists = get_page_by_title( $part_array['name'], OBJECT, 'foxpart' );
-      if( ! is_null( $part_exists ) ){
+      if( $this->_part_exists( $part_array['name'] ) ){
         WP_CLI::line('SKIPPING: Part `' . $part_array['name'] . '` exists.');
-        return;
+        return false;
       }
 
       $post_id = wp_insert_post([
@@ -156,41 +191,10 @@ class Fox_Parts_CLI extends WP_CLI_Command{
       }
 
       if( $post_id ){
-        WP_CLI::success('Created `' . $part_array['name'] . '`');
+        //WP_CLI::success('Created `' . $part_array['name'] . '`');
         $this->imported++;
       }
       return $post_id;
-    }
-
-    /**
-     * Deletes all parts for a given `part_type` slug
-     *
-     * @param      <string>  $part_type   The part_type slug
-     */
-    private function delete_parts_by_type( $part_type_slug = null ){
-      if( is_null( $part_type_slug ) )
-        return false;
-
-      // Delete all CPTs of the part_type
-      WP_CLI::line( 'Deleting all Fox Parts of of part_type `' . $part_type_slug . '`.' );
-      $term = get_term_by( 'slug', $part_type_slug, 'part_type', ARRAY_A );
-      if( $term ){
-        $term_id = intval( $term['term_id'] );
-        global $wpdb;
-        $wpdb->query(
-          $wpdb->prepare( 'DELETE a,b,c
-            FROM ' . $wpdb->prefix . 'posts a
-            LEFT JOIN ' . $wpdb->prefix . 'term_relationships b ON ( a.ID = b.object_id )
-            LEFT JOIN ' . $wpdb->prefix . 'postmeta c ON ( a.ID = c.post_id )
-            LEFT JOIN ' . $wpdb->prefix . 'term_taxonomy d ON ( d.term_taxonomy_id = b.term_taxonomy_id )
-            LEFT JOIN ' . $wpdb->prefix . 'terms e ON ( e.term_id = d.term_id )
-            WHERE e.term_id=%d', $term_id )
-          );
-
-        WP_CLI::success('All `' . $part_type_slug . '` parts were deleted.');
-        return true;
-      }
-      return false;
     }
 
     /**
@@ -250,11 +254,24 @@ class Fox_Parts_CLI extends WP_CLI_Command{
     }
 
     /**
-     * Returns the part type slug.
+     * Gets the part series from a part name.
      *
-     * @param      <string>  $part_type  The part type code
+     * @param      string  $part_name  The part name
      *
-     * @return     <string>  The part type slug.
+     * @return     string  The part series.
+     */
+    private function _get_part_series( $part_name ){
+      $start = ( 'F' == substr( $part_name, 0, 1 ) )? 1 : 0 ;
+      $part_series = substr( $part_name, $start, 4 );
+      return $part_series;
+    }
+
+    /**
+     * Returns the part type slug (e.g. `crystal`, `crystal-khz`, `oscillator`, etc).
+     *
+     * @param      string  $part_type  The part type code
+     *
+     * @return     string  The part type slug.
      */
     private function get_part_type_slug( $part_type ){
       $part_types_array = FOXPC_PART_TYPES;
@@ -263,6 +280,88 @@ class Fox_Parts_CLI extends WP_CLI_Command{
         WP_CLI::error( 'No Part Type slug has been defined for part type `' . $part_type . '`.' );
 
       return $part_types_array[$part_type];
+    }
+
+    /**
+     * Determines if part exists.
+     *
+     * @param      string   $part_name  The part name
+     *
+     * @return     boolean  True if part exists, False otherwise.
+     */
+    private function _part_exists( $part_name ){
+      $part_exists = get_page_by_title( $part_name, OBJECT, 'foxpart' );
+      if( is_null( $part_exists ) || is_wp_error( $part_exists ) ) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+
+    /**
+     * Displays the Part Series Report.
+     */
+    function part_series_report(){
+      $report = $this->part_series_report_rows;
+      WP_CLI::line("\n🔔 PART SERIES REPORT:");
+      WP_CLI\Utils\format_items( 'table', $report, ['part_series','total_in_db','total_in_csv'] );
+    }
+
+    /**
+     * Saves a part series report row.
+     */
+    private function _save_part_series_report_row(){
+      $total_in_csv = array_count_values( array_column( $this->csv_rows, 'part_series' ) )[ $this->current_part_series_name ];
+      $this->part_series_report_rows[] = [
+        'part_series'   => $this->current_part_series_name,
+        'total_in_db'   => $this->current_part_series_count,
+        'total_in_csv'  => $total_in_csv,
+      ];
+    }
+
+    /**
+     * Deletes a Part Series.
+     *
+     * @param      string  $part_series  The part series
+     */
+    private function _delete_part_series( $part_series ){
+      $foxparts = get_posts([
+        'post_type'   => 'foxpart',
+        's'           => $part_series,
+        'order'       => 'ASC',
+        'orderby'     => 'title',
+        'numberposts' => -1,
+      ]);
+      $total_parts_in_this_series = count( $foxparts );
+      $progress = \WP_CLI\Utils\make_progress_bar( '🚨 Deleting ' . $total_parts_in_this_series . ' parts in `' . $part_series . '` Part Series:', $total_parts_in_this_series );
+      foreach( $foxparts as $part ){
+        wp_delete_post( $part->ID, true );
+        $progress->tick();
+      }
+      $progress->finish();
+    }
+
+    /**
+     * Sets the current part series.
+     *
+     * @param      string  $part_series  The part series
+     */
+    private function _set_current_part_series( $part_series ){
+      // If we have a "current part series", we need to save a row
+      // in our report array before we switch to a new part series:
+      if( 0 < $this->current_part_series_count )
+        $this->_save_part_series_report_row();
+
+      $this->current_part_series_name = $part_series;
+      $foxparts = get_posts([
+        'post_type'   => 'foxpart',
+        's'           => $part_series,
+        'order'       => 'ASC',
+        'orderby'     => 'title',
+        'numberposts' => -1,
+      ]);
+      $total_parts_in_this_series = count( $foxparts );
+      $this->current_part_series_count = $total_parts_in_this_series;
     }
 }
 
