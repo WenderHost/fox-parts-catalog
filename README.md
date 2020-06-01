@@ -3,7 +3,7 @@
 **Tags:** custom post type  
 **Requires at least:** 4.4  
 **Tested up to:** 5.4.1  
-**Stable tag:** 1.1.1  
+**Stable tag:** 1.1.2  
 **License:** GPLv2 or later  
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html  
 
@@ -20,6 +20,9 @@ In addition to setting up the CPTs for the Fox Parts Catalog, this plugin includ
 * `[--delete]` (flag) - If set, delete all posts of `part_type` before importing.
 
 ## Changelog ##
+
+### 1.1.2 ###
+* Updating FoxSelect to work with `/fox-parts-catalog/` in the plugin path.
 
 ### 1.1.1 ###
 * Renaming root file from `fox-electronics-parts-catalog.php` to `fox-parts-catalog.php`.
