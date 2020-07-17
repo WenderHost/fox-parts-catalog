@@ -43,6 +43,7 @@ add_action( 'rest_api_init', __NAMESPACE__ . '\\init_rest_api', 15 );
  * @param      bool  $return Return the data
  */
 function get_options( $data, $return = false ){
+  foxparts_error_log('☎️ Starting get_options()...');
 
   $response = new \stdClass();
 
@@ -566,8 +567,11 @@ function get_web_part( \WP_REST_Request $request ){
 
   $transient_key = 'foxpart_' . $partnum;
 
-  if( false === ( $response = get_transient( $transient_key ) ) ){
+  if( false === ( $response = get_transient( $transient_key ) ) || WP_DEBUG ){
     $request_url = trailingslashit( $instance_url ) . FOXELECTRONICS_SF_API_ROUTE . 'WebPart' . '?' . http_build_query( $query );
+
+    if( WP_DEBUG )
+      foxparts_error_log( '🚨 WP_DEBUG is ON. Not using a transient. Calling API: ' . $request_url );
 
     $response = wp_remote_get( $request_url, [
       'method' => 'GET',
@@ -584,7 +588,8 @@ function get_web_part( \WP_REST_Request $request ){
       $response->data = $data;
     }
 
-    set_transient( $transient_key , $response, HOUR_IN_SECONDS * 4 );
+    if( ! WP_DEBUG )
+      set_transient( $transient_key , $response, HOUR_IN_SECONDS * 4 );
   }
 
   return $response;
