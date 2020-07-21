@@ -10,7 +10,7 @@
  * Domain Path:       /languages
  * Version:           1.1.2
  *
- * @package         Proposal_Manager
+ * @package         Fox_Parts_Catalog
  */
 define( 'FOXPC_PLUGIN_DIR_URL', plugin_dir_url( __FILE__ ) );
 define( 'FOXPC_PLUGIN_DIR_PATH', plugin_dir_path( __FILE__ ) );
