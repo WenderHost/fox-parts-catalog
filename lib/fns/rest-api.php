@@ -1,6 +1,8 @@
 <?php
 namespace FoxParts\restapi;
 
+use function FoxParts\utilities\{map_part_attribute, match_with_underscores, standardize_search_string, split_part_number};
+
 /**
  * Initialize our REST API with these routes:
  *
@@ -376,12 +378,13 @@ function get_part_series( \WP_REST_Request $request ){
   ];
 
   $params = $request->get_params();
+  foxparts_error_log('🔔 get_part_series() $params = ' . print_r( $params, true ) );
   $partnum = $params['partnum'];
   if( empty( $partnum ) )
     return new \WP_Error( 'noproductfamily', __('No `partnum` provided.') );
 
   // Standardize our search string
-  $partnum = \FoxParts\utilities\standardize_search_string( $partnum, false );
+  $partnum = standardize_search_string( $partnum, false );
   foxparts_error_log('🔔 $partnum = ' . $partnum );
   // Don't throw an error if we have an `invalid` part number, return the `default_data` which contains help on searching:
   if( ! $partnum ){
@@ -391,7 +394,7 @@ function get_part_series( \WP_REST_Request $request ){
   }
 
   // Split the partnum into `part_series` and `frequency`
-  $partnum = \FoxParts\utilities\split_part_number( $partnum );
+  $partnum = split_part_number( $partnum );
   if( ! $partnum )
     return new \WP_Error( 'cantsplitpartnum', __('I was unable to split the part number into `part_series` and `frequency`.') );
   foxparts_error_log('🔔 $partnum = ' . print_r( $partnum, true ) );
@@ -461,7 +464,7 @@ function get_part_series( \WP_REST_Request $request ){
     $data->part_type = 'Crystal';
 
     // Build out the size value
-    $size = \FoxParts\utilities\map_part_attribute(['part_type' => 'c', 'value' => $partnum['size_or_output'], 'attribute' => 'size' ]);
+    $size = map_part_attribute(['part_type' => 'c', 'value' => $partnum['size_or_output'], 'attribute' => 'size' ]);
     if( $size ){
       $size = str_replace( ' mm', '', $size );
       $size_array = explode( 'x', $size );
@@ -511,14 +514,14 @@ function get_part_series( \WP_REST_Request $request ){
         foreach( $foxparts as $part ){
           $part_obj = new \stdClass();
           $part_obj->name = get_the_title( $part->ID );
-          $part_obj->tolerance = \FoxParts\utilities\map_part_attribute(['part_type' => 'crystal', 'attribute' => 'tolerance', 'value' => get_post_meta( $part->ID, 'tolerance', true )]);
-          $part_obj->stability = \FoxParts\utilities\map_part_attribute(['part_type' => 'crystal', 'attribute' => 'stability', 'value' => get_post_meta( $part->ID, 'stability', true )]);
-          $part_obj->optemp = \FoxParts\utilities\map_part_attribute(['part_type' => 'crystal', 'attribute' => 'optemp', 'value' => get_post_meta( $part->ID, 'optemp', true )]);
+          $part_obj->tolerance = map_part_attribute(['part_type' => 'crystal', 'attribute' => 'tolerance', 'value' => get_post_meta( $part->ID, 'tolerance', true )]);
+          $part_obj->stability = map_part_attribute(['part_type' => 'crystal', 'attribute' => 'stability', 'value' => get_post_meta( $part->ID, 'stability', true )]);
+          $part_obj->optemp = map_part_attribute(['part_type' => 'crystal', 'attribute' => 'optemp', 'value' => get_post_meta( $part->ID, 'optemp', true )]);
           $part_obj->from_frequency = get_post_meta( $part->ID, 'from_frequency', true );
           $part_obj->to_frequency = get_post_meta( $part->ID, 'to_frequency', true );
 
-          $split_part_obj_name = \FoxParts\utilities\split_part_number( $part_obj->name );
-          $match = \FoxParts\utilities\match_with_underscores( $split_part_obj_name['config'], $partnum['config'] );
+          $split_part_obj_name = split_part_number( $part_obj->name );
+          $match = match_with_underscores( $split_part_obj_name['config'], $partnum['config'] );
           if( $match ){
             //\foxparts_error_log("We have a match!\n" . '🔔 $split_part_obj_name = ' . print_r( $split_part_obj_name, true ) . "\n" . '🔔 $partnum = ' . print_r( $partnum, true ) );
             $response->data[$key]->extended_product_families[] = $part_obj;
