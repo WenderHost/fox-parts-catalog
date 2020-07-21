@@ -145,7 +145,8 @@ function part_number( $atts ){
 
   if( is_null( $args['id'] ) ){
     global $post;
-    $args['id'] = $post->ID;
+    if( $post && is_object( $post ) && property_exists( $post, 'ID' ) )
+      $args['id'] = $post->ID;
   }
 
   $part_number = get_the_title( $args['id'] );
@@ -347,9 +348,13 @@ add_shortcode( 'partsearchresults', __NAMESPACE__ . '\\partsearchresults' );
 /**
  * Displays the details for a Part Series
  *
- * @param      <type>  $atts   The atts
+ * @param      array  $atts   {
+ *             Optional. Array of attributes
  *
- * @return     string  ( description_of_the_return_value )
+ *   @type  string  $s The search string.
+ * }
+ *
+ * @return     string  HTML for the search results.
  */
 function part_series_results( $atts ){
   $args = shortcode_atts( [
