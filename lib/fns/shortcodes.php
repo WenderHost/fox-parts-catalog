@@ -153,6 +153,10 @@ function part_number( $atts ){
   if( $frequency = get_query_var( 'frequency' ) )
     $part_number.= $frequency;
 
+  $load = get_query_var('load');
+  if( $load && '_' == substr( $part_number, 7, 1) )
+    $part_number = str_replace( '_', strtoupper( $load ), $part_number );
+
   return $part_number;
 }
 add_shortcode( 'partnumber', __NAMESPACE__ . '\\part_number' );
