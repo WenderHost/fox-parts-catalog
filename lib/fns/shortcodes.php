@@ -129,7 +129,11 @@ function part_details( $atts ){
   if( is_null( $args['id'] ) || ! is_numeric( $args['id'] ) )
     return '<p>ERROR: Missing `id` attribute. Please add a FoxPart ID to your shortcode.</p>';
 
-  $details_table = \FoxParts\utilities\get_part_details_table( $args['id'] );
+  if( is_admin() ){
+    $details_table = '<div class="" style="border: 1px solid #333; border-radius: 5px; background-color: #eee; padding: 1rem;"><code style="display: block; margin-bottom: 1rem;">FOR ELEMENTOR DISPLAY ONLY: This output is for display in the Elementor editor. Otherwise, this area will show the Part Details table when viewed from the frontend. Example output:</code><div style="background-color: #fff; padding: 1rem;"><img src="' . FOXPC_PLUGIN_DIR_URL . 'lib/img/part-details-table-example.png" /></div></div>';
+  } else {
+    $details_table = \FoxParts\utilities\get_part_details_table( $args['id'] );
+  }
 
   return $details_table;
 }
