@@ -35,7 +35,10 @@ require ( 'lib/fns/utilities.php' );
 // WP-CLI
 require ( 'lib/wpcli/foxparts.php' );
 
-function foxparts_error_log( $message = null ){
+function foxparts_error_log( $message = null, $display = true ){
+  if( ! $display )
+    return;
+
   static $counter = 1;
 
   $bt = debug_backtrace();
@@ -45,4 +48,10 @@ function foxparts_error_log( $message = null ){
     error_log( "\n\n" . str_repeat('-', 25 ) . ' STARTING DEBUG [' . date('h:i:sa', current_time('timestamp') ) . '] ' . str_repeat('-', 25 ) . "\n\n" );
   error_log( "\n 👉 " . $counter . '. ' . basename( $caller['file'] ) . '::' . $caller['line'] . "\n" . $message . "\n---\n" );
   $counter++;
+}
+define( 'FOXPC_LOG_API', false );
+if( FOXPC_LOG_API ){
+  foxparts_error_log( '🔔 API Logging in ON.' );
+} else {
+  foxparts_error_log( '🔔 API Logging is OFF.' );
 }
