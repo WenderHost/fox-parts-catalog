@@ -85,9 +85,13 @@ function get_package_type_from_partnum( $partnum = null ){
   return $package_type;
 };
 
- /**
-  * Returns HTML table of Part details.
-  */
+/**
+ * Returns the HTML for display details of a Fox Part.
+ *
+ * @param      int  $post_id  The post ID
+ *
+ * @return     string  HTML for the part details table.
+ */
 function get_part_details_table( $post_id ){
 
   $post = get_post( $post_id );
@@ -102,6 +106,9 @@ function get_part_details_table( $post_id ){
   if( ! stristr( $frequency, '.' ) )
     $frequency = sprintf( "%0.1f", $frequency );
 
+  // Get the `load` value from our permalink (e.g. /foxpart/FC3BACA_I/16.0/L/)
+  $load = get_query_var('load');
+
   // Query the data from our REST endpoint
   $data_partnum = ( ! empty( $frequency ) && is_float( $frequency ) )? $partnum . '-' . $frequency : $partnum . '-' . $from_frequency ;
   $data = [
@@ -109,7 +116,7 @@ function get_part_details_table( $post_id ){
     'package_type' => $package_type,
     'frequency_unit' => 'mhz'
   ];
-  \foxparts_error_log('$data = ' . print_r( $data, true ) );
+  \foxparts_error_log('Call REST API::get_options() with $data = ' . print_r( $data, true ), FOXPC_LOG_API );
   $response = \FoxParts\restapi\get_options( $data, true );
 
   if( isset( $response->configuredPart ) && 0 < $response->availableParts ){
@@ -146,8 +153,17 @@ function get_part_details_table( $post_id ){
   $rows = [];
 
   // Part Number
-  if( $frequency && '0.0' != $frequency )
-    $rows[] = [ 'heading' => 'Part Number', 'value' => $partnum . $frequency ];
+  if( $frequency && '0.0' != $frequency ){
+    foxparts_error_log('SETTING the part number: substr( $partnum, 7 ) = ' . substr( $partnum, 7, 1 ) );
+    $displayedPartnum = $partnum;
+    if(
+      'c' == strtolower( $configuredPart['product_type']['value'] )
+      && '_' == substr( $partnum, 7, 1 )
+      && $load
+    )
+      $displayedPartnum = str_replace('_', $load, $partnum );
+    $rows[] = [ 'heading' => 'Part Number', 'value' => $displayedPartnum . $frequency ];
+  }
 
   // Description and Part Series
   if( 0 < count( $details->product_family ) ){
@@ -203,7 +219,10 @@ function get_part_details_table( $post_id ){
       case 'load':
         if( 'c' == strtolower( $configuredPart['product_type']['value'] ) || 'k' == strtolower( $configuredPart['product_type']['value'] ) ){
           $row['heading'] = 'Load Capacitance (pF)';
-          if( isset( $details->circuit_condition ) ){
+          if( isset( $load ) ){
+            $row['part_code'] = $load;
+            $row['value'] = $details->circuit_condition;
+          } else if( isset( $details->circuit_condition ) ){
             $row['value'] = $details->circuit_condition;
             $row['part_code'] = $load_part_codes[$details->circuit_condition];
           }
@@ -264,14 +283,13 @@ function get_part_details_table( $post_id ){
         $row['part_code'] = $load_part_codes[$details->$variable];
 
       unset( $details->$variable );
-    } else if( array_key_exists( $variable, $configuredPart ) && '_' == $configuredPart[$variable]['value'] ) {
-      // Skip attributes without a value (i.e. `_`).
-      /*
-      if( ! isset( $row['value'] ) ){
-        foxparts_error_log('🚨🚨🚨🚨 Skipping ' . $row['heading'] );
-        continue;
-      }
-      /**/
+    } else if(
+      array_key_exists( $variable, $configuredPart )
+      && '_' == $configuredPart[$variable]['value']
+      && ! $$variable
+      && ! empty( $$variable )
+    ) {
+      // Handle attributes with `_` as the value:
       $row['value'] = '';
       $row['part_code'] = '_';
     }
@@ -422,7 +440,7 @@ function get_part_series_details( $atts ){
   if( $sfResponse->data && 0 < count($sfResponse->data) ){
     // Match to correct product series within the product family:
     foreach( $sfResponse->data as $part_series_data ){
-      if( $part_series == $part_series_data->name ){
+      if( is_object( $part_series_data ) && $part_series == $part_series_data->name ){
         switch( $args['detail'] ){
           case 'data_sheet_url_part':
             //\foxparts_error_log('Accessing `data_sheet_url_part`:');
@@ -718,7 +736,7 @@ function split_part_number( $partnum = null ){
   }
 
   // Remove load value from Crystals
-  if( 'c' == $part_number['part_type'] && 5 <= strlen( $part_number['config'] ) ){
+  if( 'c' == strtolower( $part_number['part_type'] ) && 5 <= strlen( $part_number['config'] ) ){
     $config_array = str_split( $part_number['config'] );
     $part_number['load'] = $config_array[4];
     $config_array[4] = '_';
