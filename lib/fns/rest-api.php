@@ -45,7 +45,7 @@ add_action( 'rest_api_init', __NAMESPACE__ . '\\init_rest_api', 15 );
  * @param      bool  $return Return the data
  */
 function get_options( $data, $return = false ){
-  foxparts_error_log('☎️ Starting get_options()...');
+  foxparts_error_log( '☎️ Starting get_options()...', FOXPC_LOG_API );
 
   $response = new \stdClass();
 
@@ -378,14 +378,14 @@ function get_part_series( \WP_REST_Request $request ){
   ];
 
   $params = $request->get_params();
-  foxparts_error_log('🔔 get_part_series() $params = ' . print_r( $params, true ) );
+  foxparts_error_log('🔔 get_part_series() $params = ' . print_r( $params, true ), FOXPC_LOG_API );
   $partnum = $params['partnum'];
   if( empty( $partnum ) )
     return new \WP_Error( 'noproductfamily', __('No `partnum` provided.') );
 
   // Standardize our search string
   $partnum = standardize_search_string( $partnum, false );
-  foxparts_error_log('🔔 $partnum = ' . $partnum );
+  foxparts_error_log('🔔 $partnum = ' . $partnum, FOXPC_LOG_API );
   // Don't throw an error if we have an `invalid` part number, return the `default_data` which contains help on searching:
   if( ! $partnum ){
     $response = new \stdClass();
@@ -397,7 +397,7 @@ function get_part_series( \WP_REST_Request $request ){
   $partnum = split_part_number( $partnum );
   if( ! $partnum )
     return new \WP_Error( 'cantsplitpartnum', __('I was unable to split the part number into `part_series` and `frequency`.') );
-  foxparts_error_log('🔔 $partnum = ' . print_r( $partnum, true ) );
+  foxparts_error_log('🔔 $partnum = ' . print_r( $partnum, true ), FOXPC_LOG_API );
 
   $query['part'] = $partnum['search']; // Our SF API uses `part` as the query param
 
@@ -414,7 +414,7 @@ function get_part_series( \WP_REST_Request $request ){
     $request_url = trailingslashit( $instance_url ) . FOXELECTRONICS_SF_API_ROUTE . 'ProductFamily' . '?' . http_build_query( $query );
 
     if( WP_DEBUG )
-      foxparts_error_log('🚨 WP_DEBUG is ON. Not using a transient. Calling API: ' . $request_url );
+      foxparts_error_log('🚨 WP_DEBUG is ON. Not using a transient. Calling API: ' . $request_url, FOXPC_LOG_API );
 
     $response = wp_remote_get( $request_url, [
       'method' => 'GET',
@@ -510,7 +510,7 @@ function get_part_series( \WP_REST_Request $request ){
       $foxparts = get_posts( $args );
       //foxparts_error_log('$foxparts = ' . print_r( $foxparts, true ) );
       if( $foxparts ){
-        \foxparts_error_log('We have some parts...');
+        //\foxparts_error_log('We have some parts...', FOXPC_LOG_API );
         foreach( $foxparts as $part ){
           $part_obj = new \stdClass();
           $part_obj->name = get_the_title( $part->ID );
