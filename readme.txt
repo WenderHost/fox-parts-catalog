@@ -3,7 +3,7 @@ Contributors: thewebist
 Tags: custom post type
 Requires at least: 4.4
 Tested up to: 5.4.1
-Stable tag: 1.1.3
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,6 +20,9 @@ In addition to setting up the CPTs for the Fox Parts Catalog, this plugin includ
 * `[--delete]` (flag) - If set, delete all posts of `part_type` before importing.
 
 == Changelog ==
+
+= 1.2.0 =
+* Adding part `load` value to Crystals part display.
 
 = 1.1.3 =
 * Displaying extended results for Crystal searches via `datatables-init.js`.
