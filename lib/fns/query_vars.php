@@ -2,8 +2,21 @@
 
 namespace FoxParts\query_vars;
 
+/**
+ * Add query vars to WP Query.
+ *
+ * Adds the following variables to the WordPress Query:
+ *
+ * $frequency - Fox Part `frequency` value
+ * $load      - Fox Part `load` value
+ *
+ * @param      array  $vars   The query variables
+ *
+ * @return     array  The filtered query variables.
+ */
 function add_query_vars( $vars ){
   $vars[] = 'frequency';
+  $vars[] = 'load';
   return $vars;
 }
 add_filter( 'query_vars', __NAMESPACE__ . '\\add_query_vars' );
@@ -13,6 +26,8 @@ add_filter( 'query_vars', __NAMESPACE__ . '\\add_query_vars' );
  */
 function add_rewrites(){
   add_rewrite_tag( '%frequency%', '([0-9]+\.[0-9]+[\-]?[0-9]?)' ); // [0-9]+\.[0-9]+,
+  add_rewrite_tag( '%load%', '([a-zA-Z]{1})' );
+  add_rewrite_rule( 'foxpart/([0-9a-zA-Z_]+)/([0-9]+\.[0-9]+)/([a-zA-Z]{1})/?', 'index.php?post_type=foxpart&name=$matches[1]&frequency=$matches[2]&load=$matches[3]', 'top' );
   add_rewrite_rule( 'foxpart/([0-9a-zA-Z_]+)/([0-9]+\.[0-9]+)/?', 'index.php?post_type=foxpart&name=$matches[1]&frequency=$matches[2]', 'top' );
 }
 add_action( 'init', __NAMESPACE__ . '\\add_rewrites', 10, 0 );
