@@ -7,3 +7,4 @@ node_modules/
 *.zip
 *.sublime-*
 lib/foxselect_prod*
+lib/foxselect_staging
