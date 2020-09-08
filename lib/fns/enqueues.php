@@ -11,6 +11,8 @@ function add_enqueues(){
   wp_enqueue_script( 'foxselect-loader', plugin_dir_url( __FILE__ ) . '../js/foxselect-loader.js', ['jquery'], filemtime( plugin_dir_path( __FILE__ ) . '../js/foxselect-loader.js' ), true );
   wp_localize_script( 'foxselect-loader', 'fsloaderVars', ['resturl' => get_rest_url( null, 'foxparts/v1/get_options/' ), 'ieurl' => '/foxselect-ie'] );
 
+  wp_register_script( 'datatables', 'https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js', ['jquery'], '1.10.21', false );
+
   // Register Additional Scripts
   wp_register_script( 'handlebars', 'https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.1.2/handlebars.min.js', null, '4.1.2' );
   wp_register_script( 'productlist', plugin_dir_url( __FILE__ ) . '../js/product-list.js', ['handlebars','jquery'], filemtime( plugin_dir_path( __FILE__ ) . '../js/product-list.js' ), true );
