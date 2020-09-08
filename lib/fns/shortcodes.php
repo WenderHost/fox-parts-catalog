@@ -382,6 +382,33 @@ function part_series_results( $atts ){
 add_shortcode( 'partseriesresults', __NAMESPACE__ . '\\part_series_results' );
 
 /**
+ * Displays the Product Change Notices data table.
+ *
+ * @return     string  HTML for the PCN Table.
+ */
+function product_change_notices(){
+  wp_enqueue_script( 'datatables' );
+  $script = file_get_contents( FOXPC_PLUGIN_DIR_PATH . 'lib/js/product-change-notices.js' );
+  wp_add_inline_script( 'datatables', $script );
+
+  $table = '<style type="text/css">#product-change-notices td.align-center{text-align: center;} #product-change-notices td.align-right{text-align: right;}</style><table id="product-change-notices">
+    <thead>
+      <tr>
+        <th>PCN No.</th>
+        <th>Date Posted</th>
+        <th>Type of Change</th>
+        <th>Products Affected</th>
+        <th>View PCN</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>';
+
+  return $table;
+}
+add_shortcode( 'productchangenotices', __NAMESPACE__ . '\\product_change_notices' );
+
+/**
  * For Product Family pages, displays a listing of FOX parts.
  *
  * @param      <type>  $atts   The atts
