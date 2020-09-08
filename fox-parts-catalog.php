@@ -8,7 +8,7 @@
  * Author URI:        https://mwender.com
  * Text Domain:       fox-electronics
  * Domain Path:       /languages
- * Version:           1.2.0
+ * Version:           1.2.1
  *
  * @package         Fox_Parts_Catalog
  */
