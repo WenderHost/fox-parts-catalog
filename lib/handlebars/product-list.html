@@ -62,16 +62,16 @@ li.product .btn{
   {{#each this.products}}
     <li class="product">
 
-        <div class="productimage">{{#if landing_page}}<a href="{{landing_page}}" style="display: block">{{/if}}<img src="{{image}}" style="width: 80px;" />{{#if landing_page}}</a>{{/if}}</div>
-        <h2>{{#if landing_page}}<a href="{{landing_page}}">{{/if}}{{product_family}}{{#if landing_page}}</a>{{/if}}</h2>
+        <div class="productimage">{{#if landingPage}}<a href="{{landingPage}}" style="display: block">{{/if}}<img src="{{image}}" style="width: 80px;" />{{#if landingPage}}</a>{{/if}}</div>
+        <h2>{{#if landingPage}}<a href="{{landingPage}}">{{/if}}{{productFamily}}{{#if landingPage}}</a>{{/if}}</h2>
         <p>
           {{size}}
-          <br />{{frequency_range}}
+          <br />{{frequencyRange}}
           {{#if line_3}}<br />{{line_3}}{{/if}}
           {{#if line_4}}<br />{{line_4}}{{/if}}
           {{#if line_5}}<br />{{line_5}}{{/if}}</p>
-        <div class="datasheet">{{#if data_sheet}}<a href="{{data_sheet}}" target="_blank">Download Datasheet</a>{{else}}&nbsp;{{/if}}</div>
-        <div class="open-foxselect"><a href="{{../modalurl}}" class="foxselect btn btn-sm btn-primary" data-partnumber="F{{product_family}}____-0.0/{{package_type}}/{{frequency_unit}}">Open in FOXSelect</a></div>
+        <div class="datasheet">{{#if dataSheet}}<a href="{{dataSheet}}" target="_blank">Download Datasheet</a>{{else}}&nbsp;{{/if}}</div>
+        <div class="open-foxselect"><a href="{{../modalurl}}" class="foxselect btn btn-sm btn-primary" data-partnumber="F{{productFamily}}____-0.0/{{packageType}}/{{frequencyUnit}}">Open in FOXSelect</a></div>
 
     </li>
   {{/each}}
