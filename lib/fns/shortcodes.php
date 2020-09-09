@@ -454,3 +454,60 @@ function load_product_list_template(){
   echo file_get_contents( plugin_dir_path( __FILE__ ) . '../handlebars/product-list.html' );
 }
 
+/**
+ * Displays a representatives datatable.
+ *
+ * @param      array  $atts {
+ *   @type  string  $type The type of representative (state, country, or distributors).
+ * }
+ *
+ * @return     string  The HTML for the datatable.
+ */
+function representatives( $atts ){
+  static $count = 0;
+  $count++;
+
+  $args = shortcode_atts( [
+    'type' => 'state'
+  ], $atts );
+
+  $api_urls = [
+    'state' => [
+      'url'       => 'https://api.sheety.co/202a6b1f472c208bf6c05ad5dce78066/foxRepsAndDistysCombinded/repsByState',
+      'property'  => 'repsByState',
+    ],
+    'country' => [
+      'url'       => 'https://api.sheety.co/202a6b1f472c208bf6c05ad5dce78066/foxRepsAndDistysCombinded/repsByCountry',
+      'property'  => 'repsByCountry',
+    ],
+    'distributors' => [
+      'url'       => 'https://api.sheety.co/202a6b1f472c208bf6c05ad5dce78066/foxRepsAndDistysCombinded/distributors',
+      'property'  => 'distributors',
+    ],
+  ];
+  $api = $api_urls[ $args['type'] ];
+
+  wp_enqueue_script( 'datatables' );
+  $media_rest_url = rest_url( 'wp/v2/media' );
+  $wpvars = [
+    'type'          => $args['type'],
+    'apiUrl'        => $api['url'],
+    'apiProperty'   => $api['property'],
+    'mediaRestUrl'  => $media_rest_url,
+  ];
+  wp_localize_script( 'datatables', 'wpvars' . $count, $wpvars );
+  $script = file_get_contents( FOXPC_PLUGIN_DIR_PATH . 'lib/js/reps-and-distributors.js' );
+  $script = str_replace('{{count}}', $count, $script );
+  wp_add_inline_script( 'datatables', $script );
+
+  $raw_html = file_get_contents( FOXPC_PLUGIN_DIR_PATH . 'lib/html/reps-table.html' );
+  $columns = [
+    'state'         => '<th>State</th><th>Representative</th><th>Contact Info</th><th>Additional Info</th>',
+    'country'       => '<th>Country</th><th>Representative</th><th>Contact Info</th><th>Additional Info</th>',
+    'distributors'  => '<th>Region</th><th>Distributor</th>',
+  ];
+  $html = str_replace( ['{{type}}','{{columns}}'], [ $args['type'], $columns[ $args['type'] ] ], $raw_html );
+
+  return $html;
+}
+add_shortcode( 'reps', __NAMESPACE__ . '\\representatives' );
