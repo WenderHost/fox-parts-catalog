@@ -504,7 +504,7 @@ function representatives( $atts ){
   $columns = [
     'state'         => '<th>State</th><th>Representative</th><th>Contact Info</th><th>Additional Info</th>',
     'country'       => '<th>Country</th><th>Representative</th><th>Contact Info</th><th>Additional Info</th>',
-    'distributors'  => '<th>Region</th><th>Distributor</th>',
+    'distributors'  => '<th>Region</th><th>Logo</th><th>Distributor</th>',
   ];
   $html = str_replace( ['{{type}}','{{columns}}'], [ $args['type'], $columns[ $args['type'] ] ], $raw_html );
 
