@@ -6,7 +6,7 @@
   "devDependencies": {
     "autoprefixer": "^9.8.5",
     "chokidar-cli": "^2.1.0",
-    "grunt": "^1.2.1",
+    "grunt": "^1.5.2",
     "grunt-wp-i18n": "^1.0.3",
     "grunt-wp-readme-to-markdown": "~1.0.0",
     "node-sass-chokidar": "^1.5.0",
